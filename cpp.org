@@ -1,0 +1,247 @@
+#+PROPERTY: header-args:cpp :eval never :main no :flags -Wall -std=c++20 :noweb no-export
+#+PROPERTY: header-args :exports both :wrap "src text"
+
+#+title: LitLib C++
+#+subtitle: A collection of C++20 building blocks for literate programming
+
+* Printing
+** Type name to string
+From https://stackoverflow.com/a/56766138.
+
+#+name: type_str
+#+begin_src cpp :noweb-ref litlib
+template <typename T>
+constexpr auto type_str() noexcept {
+    std::string_view name = "Error: unsupported compiler", prefix, suffix;
+#ifdef __clang__
+    name = __PRETTY_FUNCTION__;
+    prefix = "auto type_str() [T = ";
+    suffix = "]";
+#elif defined(__GNUC__)
+    name = __PRETTY_FUNCTION__;
+    prefix = "constexpr auto type_str() [with T = ";
+    suffix = "]";
+#elif defined(_MSC_VER)
+    name = __FUNCSIG__;
+    prefix = "auto __cdecl type_str<";
+    suffix = ">(void) noexcept";
+#endif
+    name.remove_prefix(prefix.size());
+    name.remove_suffix(suffix.size());
+    return name;
+}
+#+end_src
+#+depends:type_str :cpp string_view
+
+Usage:
+#+begin_src cpp :eval no-export
+<<include(noweb="type_str", cpp="iostream")>>
+using namespace std;
+int main(){
+    cout << type_str<int>() << "\n";
+    const long ft = 42;
+    cout << type_str<decltype(ft)>() << "\n";
+    cout << type_str<decltype(12.3)>() << "\n";
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+int
+const long int
+double
+#+end_src
+
+** Type printer (=print_infos=)
+
+#+name: print_infos
+#+begin_src cpp :noweb-ref litlib
+template <typename T>
+void print_infos() {
+    std::cout << type_str<T>() << " -> " << sizeof(T) << " bytes\n";
+}
+#+end_src
+#+depends:print_infos :cpp iostream :noweb type_str
+
+Usage:
+#+begin_src cpp :eval no-export
+<<include(noweb="print_infos")>>
+using namespace std;
+
+int main(){
+    print_infos<int>();
+    const long ft = 42;
+    print_infos<decltype(ft)>();
+    print_infos<decltype(12.3)>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+int -> 4 bytes
+const long int -> 8 bytes
+double -> 8 bytes
+#+end_src
+
+** Print function
+
+With variadic template and a bit of constructor abuse, it's possible to make a python-style print function accepting any number of arguments, separating them with a space and printing a newline at the end.
+What I mean by constructor abuse is that the constructor just below is not really here to construct anything, it is simply the mechanism allowing us to use the =print= struct like a function.
+It's only here to trigger the side-effect.
+
+#+name: print-function
+#+begin_src cpp :noweb-ref litlib
+namespace print_{
+struct err {
+    constexpr static auto& value = std::cerr;
+};
+
+struct out {
+    constexpr static auto& value = std::cout;
+};
+
+struct format {
+    std::string sep = " ";
+    std::string end = "\n";
+};
+
+}
+
+template<typename Destination=print_::out>
+struct print {
+  private:
+    template<typename T>
+    void print_one(const T& el) {
+        Destination::value << el;
+    }
+
+    template<typename T>
+    void print_all(const T& el) { // Last.
+        Destination::value << el << format_.end;
+    }
+
+    template<typename T, typename... Args>
+    void print_all(const T& el, Args... args) {
+        print_one(el);
+        print_one(format_.sep);
+        print_all(args...);
+    }
+
+    print_::format format_ = print_::format();
+
+  public:
+    // Default formatting.
+    template<typename... Args>
+    print(Args... args) {
+        print_all(args...);
+    }
+
+    <<print-function/public>>
+};
+#+end_src
+#+depends:print-function :cpp iostream
+
+Printing to stderr is a bit weird to test because org-mode simply does not display stderr and I do not know how to fix this.
+
+#+begin_src cpp :eval no-export
+<<include(noweb="print-function")>>
+using namespace print_;
+
+int main(){
+    print<err>{"will", "not", "print"};
+    print{"will print", "this", "one", 1, 47.2};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+will print this one 1 47.2
+#+end_src
+
+*** Empty line
+
+Adding a default constructor will allow the caller to print empty lines, which is something I like to do from time to time when I want to let the output breathe.
+
+#+begin_src cpp :noweb-ref print-function/public
+print() {
+    Destination::value << format_.end;
+}
+#+end_src
+
+*** Customizable formatting
+
+To make the separator and the end delimiter customizable, a bit more magic is needed in the form of a =printer::format= constructor and a parentheses operator.
+#+begin_src cpp :noweb-ref print-function/public
+print(print_::format fmt): format_(std::move(fmt))
+{}
+
+template<typename... Args>
+void operator()(Args... args) {
+    print_all(args...);
+}
+#+end_src
+
+Now it's possible to customize the print "function" by first constructing it with a =printer::format= and then using its parentheses operator to print stuff.
+
+#+begin_src cpp :eval no-export
+<<include(noweb="print-function")>>
+
+int main() {
+    print{{.sep=" -> ", .end=", this is the end.\n"}}(1, "two", int(7.5 -4), 2. * 2);
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+1 -> two -> 3 -> 4, this is the end.
+#+end_src
+
+Apparently this src_cpp[]{{.field1=value1, .field2=value2}} syntax is called designated initialization.
+
+Some added bonuses:
+ 1. It's possible to construct a printer object and to reuse it at will.
+ 2. The formatting parameters can also be used individually.
+
+#+begin_src cpp :eval no-export
+<<include(noweb="print-function")>>
+
+int main() {
+    auto printer = print{{.sep=" < "}};
+    printer(4, 8, 15, 16, 23, 42);
+    printer("lost", "stargate");
+    print{};
+    print{{.end=" it's me Imoen"}}("heya");
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+4 < 8 < 15 < 16 < 23 < 42
+lost < stargate
+
+heya it's me Imoen
+#+end_src
+
+Some disadvantages:
+ 1. The double braced syntax is a bit wonky.
+ 2. Parameters must be in the correct order, src_cpp[]{print{{.end="\n", .sep=", "}}("test");} will not compile.
+ 3. It's possible to make an incorrect call by mistake without it triggering a compilation error.
+    #+begin_src cpp :eval no-export
+<<include(noweb="print-function")>>
+int main() {
+    print{.sep=", ", .end="\n"}("test");
+}
+    #+end_src
+
+    #+RESULTS:
+    #+begin_src text
+    ,  
+
+    test
+    #+end_src
+    I don't know why this is allowed but it evidently is.
+
+ 4. The syntax is inconsistent because for some reason I don't understand, src_cpp[]{std::string a("3"); print(a);} does not compile, whereas src_cpp[]{std::string a("3"); print{a});} does.
+
+    So my guideline would be to use braces when using the default formatting and parens when using custom formatting.
+

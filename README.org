@@ -1,0 +1,95 @@
+#+title: Literate programming library
+
+This project is an attempt to put in place tools and a consistent style for literate programming to be used in other projects.
+
+It is currently centered around C++ and org-mode.
+
+* Literate style
+
+ 1. *No inclusion in library blocks.*
+
+    Non-evaluable code blocks are library blocks, they shoud not include anything be it via the =:includes= noweb directive of via the =#include= preprocessor directive or even via noweb inclusions.
+    This is because C++ is picky about redeclaration.
+
+    To handle the problem of C++ and noweb dependencies, I made the following syntax to declare the dependencies of a given code block:
+    #+begin_src org
+,#+depends:code-block-name :cpp space separated cpp header list :noweb same deal
+    #+end_src
+    I also made a companion script (=include.pl=) to interpret this syntax, as explained in the following section.
+
+* Illustration
+
+The =include.pl= script analyses a given document and outputs its noweb and cpp dependencies.
+The way to use it in another project is to define an =include= code block in bash, like so:
+#+begin_src org
+,#+name: include
+,#+begin_src sh :var cpp="" noweb="" :results output :wrap "src cpp"
+./litlib/include.pl "current_filename.org other_files.org" "$cpp" "$noweb"
+,#+end_src
+#+end_src
+
+As implied by the usage of double quotes to supply space-separated files to =include.pl=, spaces are not supported in filenames (or in other arguments).
+
+In this version of the =include= code block, we use this file and =cpp.org= as sources.
+#+name: include
+#+begin_src sh :var cpp="" noweb="" :results output :wrap "src cpp" :exports none
+./include.pl "README.org cpp.org" "$cpp" "$noweb"
+#+end_src
+
+Afterwards, given the following =test= code block:
+#+name: test
+#+begin_src cpp
+int main(){
+    std::cout << "Extensive testing.\n";
+    return 0;
+}
+#+end_src
+#+depends:test :cpp iostream
+
+With its dependencies defined as such:
+#+begin_src org
+,#+depends:test :cpp iostream
+#+end_src
+
+One can include it with all its dependencies with the following:
+#+begin_src cpp :noweb yes :exports both
+// Adding <vector> just for the hell of it.
+<<include(cpp="vector", noweb="test")>>
+#+end_src
+
+#+RESULTS:
+:results:
+Extensive testing.
+:end:
+
+When in doubt about the =include= code block, one can troubleshoot its invocation by calling the code block directly within org-mode, using the =#+call= syntax with the desired additional parameter (here I'm using =:wrap src cpp=):
+#+begin_src org
+,#+call: include(cpp="vector", noweb="test") :wrap src cpp
+#+end_src
+
+Which gives us:
+#+call: include(cpp="vector", noweb="test") :wrap src cpp
+
+#+RESULTS:
+#+begin_src cpp
+#include <iostream>
+#include <vector>
+int main(){
+    std::cout << "Extensive testing.\n";
+    return 0;
+}
+#+end_src
+
+Since =cpp.org= was included as a source, we can use the =print= function defined in it:
+#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export
+<<include(noweb="print-function")>>
+int main(){
+    print{"Let's print the lost numbers:", 4, 8, 15, 16, 23, 42};
+}
+#+end_src
+
+#+RESULTS:
+:results:
+Let's print the lost numbers: 4 8 15 16 23 42
+:end:
+
