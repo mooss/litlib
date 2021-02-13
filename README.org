@@ -1,5 +1,6 @@
 #+title: Literate programming library
 
+* About
 This project is an attempt to put in place tools and a consistent style for literate programming to be used in other projects.
 
 It is currently centered around C++ and org-mode.
@@ -19,7 +20,7 @@ Disclaimer: github seems to refuse to show code block results so this document i
     #+end_src
     I also made a companion script (=include.pl=) to interpret this syntax, as explained in the following section.
 
-* Illustration
+* =include.pl= presentation
 
 The =include.pl= script analyses a given document and outputs its noweb and cpp dependencies.
 The way to use it in another project is to define an =include= code block in bash, like so:
@@ -32,9 +33,9 @@ The way to use it in another project is to define an =include= code block in bas
 
 As implied by the usage of double quotes to supply space-separated files to =include.pl=, spaces are not supported in filenames (or in other arguments).
 
-In this version of the =include= code block, we use this file and =cpp.org= as sources.
+In this version of the =include= code block, we use this file and =cpp.org= as sources:
 #+name: include
-#+begin_src sh :var cpp="" noweb="" :results output :wrap "src cpp" :exports none
+#+begin_src sh :var cpp="" noweb="" :results output :wrap "src cpp" :exports code
 ./include.pl "README.org cpp.org" "$cpp" "$noweb"
 #+end_src
 
@@ -54,15 +55,15 @@ With its dependencies defined as such:
 #+end_src
 
 One can include it with all its dependencies with the following:
-#+begin_src cpp :noweb yes :exports both
+#+begin_src cpp :noweb yes :exports both :wrap "src text"
 // Adding <vector> just for the hell of it.
 <<include(cpp="vector", noweb="test")>>
 #+end_src
 
 #+RESULTS:
-:results:
+#+begin_src text
 Extensive testing.
-:end:
+#+end_src
 
 When in doubt about the =include= code block, one can troubleshoot its invocation by calling the code block directly within org-mode, using the =#+call= syntax with the desired additional parameter (here I'm using =:wrap src cpp=):
 #+begin_src org
@@ -95,3 +96,4 @@ int main(){
 Let's print the lost numbers: 4 8 15 16 23 42
 :end:
 
+This is just a basic example, this script is really useful when using a lot of code blocks, each having their own set of overlapping noweb and C++ dependencies.
