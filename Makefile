@@ -8,15 +8,4 @@ ORG_SOURCES := README cpp
 pdf: $(ORG_SOURCES:%=%.pdf)
 
 %.pdf: %.org
-	pandoc 	--standalone\
-		--to latex $^\
-		--output $@\
-		--include-in-header preamble.tex\
-		--highlight-style tango\
-		--variable documentclass:report\
-		--variable geometry:margin=2.5cm\
-		--variable papersize:a4paper\
-		--table-of-content\
-		--toc-depth 5\
-		--citeproc\
-		--variable lang:en
+	./export-to-pdf.sh "$^" "$@"
