@@ -68,10 +68,10 @@ When in doubt about the =include= code block, one can troubleshoot its invocatio
 #+end_src
 
 Which gives us:
-#+call: include(cpp="vector", noweb="test") :wrap src cpp
+#+call: include(cpp="vector", noweb="test") :wrap "src cpp :exports code"
 
 #+RESULTS:
-#+begin_src cpp
+#+begin_src cpp :exports code
 #include <iostream>
 #include <vector>
 int main(){
