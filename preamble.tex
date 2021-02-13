@@ -1,0 +1,99 @@
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
+
+%%%%%%%%%%%%%
+% highlight %
+%%%%%%%%%%%%%
+\usepackage{fvextra}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},fontsize=\small,breaklines}
+
+%%%%%%%%%%%%%%
+% title page %
+%%%%%%%%%%%%%%
+\usepackage{titling}
+%% Reducing the space before the title
+\setlength{\droptitle}{-10em}
+
+\pretitle{\begin{center}\Huge\bfseries}
+\posttitle{\par\end{center}\vskip 0.5em}
+\preauthor{\begin{center}\Large\ttfamily}
+\postauthor{\end{center}}
+\predate{\par\large\centering}
+\postdate{\par}
+
+%%%%%%%%%%%%%%%%%%%%
+% table of content %
+%%%%%%%%%%%%%%%%%%%%
+\makeatletter
+\let\stdl@chapter\l@chapter
+\renewcommand*{\l@chapter}[2]{%
+  \stdl@chapter{\textcolor{coloroftitles}{#1}}{\textcolor{black}{#2}}}
+
+\let\stdl@section\l@section
+\renewcommand*{\l@section}[2]{%
+  \stdl@section{\textcolor{coloroftitles}{#1}}{\textcolor{black}{#2}}}
+
+\let\stdl@subsection\l@subsection
+\renewcommand*{\l@subsection}[2]{%
+  \stdl@subsection{\textcolor{coloroftitles}{#1}}{\textcolor{black}{#2}}}
+
+\let\stdl@subsubsection\l@subsubsection
+\renewcommand*{\l@subsubsection}[2]{%
+  \stdl@subsubsection{\textcolor{coloroftitles}{#1}}{\textcolor{black}{#2}}}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% chapters and sections %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{sectsty}
+\usepackage[normalem]{ulem}%%\uline for underlining sections
+\usepackage[nobottomtitles*, explicit]{titlesec}
+\definecolor{coloroftitles}{RGB}{0,0,0}
+
+\titlespacing{\chapter}{0pt}{0pt}{14pt}
+\titlespacing{\section}{0pt}{12pt}{10pt}
+
+\titleformat{\chapter}
+            {\color{coloroftitles}\normalfont\fontsize{20pt}{23pt}\selectfont\bfseries}
+            {\Roman{chapter}\enspace#1}
+            {1em}
+            {\color{coloroftitles}}
+            [{\color{coloroftitles}\nobreak\titlerule[2pt]}]
+
+\titleformat{name=\chapter,numberless}
+            {\color{coloroftitles}\normalfont\fontsize{20pt}{23pt}\selectfont\bfseries}
+            {#1}
+            {1em}
+            {\color{coloroftitles}}
+            [{\color{coloroftitles}\nobreak\titlerule[2pt]}]
+
+\titleformat{\section}
+            {\color{coloroftitles}\normalfont\fontsize{15pt}{18pt}\bfseries}
+            {\renewcommand{\ULthickness}{1.5pt} \renewcommand{\ULdepth}{6pt} \color{coloroftitles} \uline{\thesection\quad#1}}
+            {1em}
+            {}
+
+\titleformat{name=\section,numberless}
+            {\color{coloroftitles}\normalfont\fontsize{15pt}{18pt}\bfseries}
+            {\renewcommand{\ULthickness}{1.5pt}\renewcommand{\ULdepth}{6pt}\color{coloroftitles}\uline{#1}}
+            {1em}
+            {}
+
+\titleformat{\subsection}
+            {\color{coloroftitles}\normalfont\fontsize{12pt}{14pt}\bfseries}
+            {\color{coloroftitles}\thesubsection\quad#1}
+            {1em}
+            {}
+
+\titleformat{name=\subsection,numberless}
+            {\color{coloroftitles}\normalfont\fontsize{12pt}{14pt}\bfseries}
+            {\color{coloroftitles}#1}
+            {1em}
+            {}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% other customisations %
+%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand\labelitemi{---}
