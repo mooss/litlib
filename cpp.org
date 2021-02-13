@@ -4,6 +4,14 @@
 #+title: LitLib C++
 #+subtitle: A collection of C++20 building blocks for literate programming
 
+* Prelude
+
+Mandatory include block to be able to execute examples:
+#+name: include
+#+begin_src sh :var cpp="" noweb="" :results output :wrap "src cpp"
+./include.pl "cpp.org" "$cpp" "$noweb"
+#+end_src
+
 * Printing
 ** Type name to string
 From https://stackoverflow.com/a/56766138.
