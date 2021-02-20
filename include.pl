@@ -13,10 +13,11 @@
 
 use strict;
 use warnings;
+use v5.14; # for say.
 
 sub stop {
     my $msg = shift;
-    print '#error "' . $msg . "\"\n";
+    say '#error "' . $msg . '"';
     exit();
 }
 
@@ -171,7 +172,7 @@ sub print_codeblock {
 }
 
 foreach(@cpp_) {
-    print "#include <$_>\n";
+    say "#include <$_>";
 }
 foreach(@noweb_) {
     print_codeblock($_);
