@@ -99,12 +99,19 @@ sub lines_and_blocks {
                 $named{$num + 1} = $name;
                 push @{$global_named_blocks{$name}}, $num + 2;
             }
-        } elsif($line =~ /^\s*#\+begin_src.+:noweb-ref ([^:]+)/) {
-            my $name = $1; chomp($name);
-            push @{$global_named_blocks{$name}}, $num + 1;
-            if(exists $named{$num}) {
-                push @{$reffed{$name}}, $named{$num};
+
+        } elsif($line =~ /^\s*#\+begin_src .+ (:.*)/) {
+            $debug->("Code block start -> $line");
+            my $args = extract_parameters($1);
+            my $name = $args->{'noweb-ref'}[0];
+            if(defined $name) {
+                push @{$global_named_blocks{$name}}, $num + 1;
+                if(exists $named{$num}) {
+                    push @{$reffed{$name}}, $named{$num};
+                    # So this thing is both reffed and named ? I have no idea why.
+                }
             }
+
         } elsif($line =~ /^\s*#\+depends:([^\s]+)\s+(.*)/) {
             stop "Dependency duplicate `$1`." if exists $global_dependencies{$1};
             $global_dependencies{$1} = extract_parameters($2);
