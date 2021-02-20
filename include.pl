@@ -21,11 +21,15 @@ sub stop {
     exit();
 }
 
+sub comment {
+    say '// ' . shift;
+}
+
 ######################
 # Arguments handling #
 ######################
-stop("Usage: $0 filenames cpp noweb")
-    if @ARGV != 3;
+stop("Usage: $0 filenames cpp noweb optional_flags")
+    if @ARGV != 3 && @ARGV != 4;
 
 my $filenames = $ARGV[0];
 my $cpp = $ARGV[1];
@@ -33,6 +37,19 @@ my $noweb = $ARGV[2];
 
 stop('At least one noweb block or cpp inclusion is needed.')
     if($noweb eq '' && $cpp eq '');
+
+my %flags = ();
+if(@ARGV == 4) {
+    foreach(split / /, $ARGV[3]) { $flags{$_} = 1}
+}
+
+# Apparently, it is considered "redefining" if I define a sub in an if and in its else, hence the closure.
+my $debug = sub {};
+if(defined $flags{debug}) {
+    $debug = sub {
+        comment 'DBG: ' . shift;
+    }
+}
 
 ##################
 # Proper imports #
@@ -113,7 +130,7 @@ my %seen_noweb;
 my %seen_cpp;
 sub extract_dependencies {
     foreach my $name (@_) {
-        if(!$seen_noweb{$name}++) {
+        if(!$seen_noweb{$name}++) { # Kinda weird trick to use a hashtable as a set.
             my $deps = $global_dependencies{$name};
             stop("No dependencies declared for `$name`.") if !defined $deps;
             foreach(@{$deps->{cpp}}) {
@@ -141,7 +158,9 @@ foreach(split / /, $cpp) {
 ########################
 sub print_codeblock_rec {
     my ($name, $prefix, $depth) = @_;
-    stop "Cannot find code block named `$name`." unless exists $global_named_blocks{$name};
+    stop "Cannot find code block named `$name`, I only know of [" .
+        join(', ', map {'`' . $_ . '`'} keys %global_named_blocks) . '].'
+        unless exists $global_named_blocks{$name};
     stop "Maximum noweb inclusion depth reached (" . MAX_DEPTH
         . "). Check for recursive noweb inclusions or increase MAX_DEPTH."
         unless $depth <= MAX_DEPTH;
