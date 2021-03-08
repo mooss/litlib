@@ -95,7 +95,9 @@ sub lines_and_blocks {
         if($line =~ /^\s*#\+name: (.*)$/) {
             my $name = $1; chomp($name);
             if($global_lines[$num + 1] =~ /^\s*#\+begin_src/) {
-                stop "Duplicated named code block `$name`." if exists $global_named_blocks{$name};
+                stop "Duplicated named code block `$name`."
+                    if $name ne 'include' # `include` is special because it's used as a shortcut for this script.
+                    and exists $global_named_blocks{$name};
                 $named{$num + 1} = $name;
                 push @{$global_named_blocks{$name}}, $num + 2;
             }
