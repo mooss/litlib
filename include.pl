@@ -11,10 +11,20 @@
 # For an example about how this is supposed to be used, look at the include code
 # block in interprete.org, along with its various invocations.
 
+###########
+# Imports #
+###########
 use strict;
 use warnings;
 use v5.14; # for say.
+use constant {
+    MAX_DEPTH => 2
+};
+use Text::ParseWords qw/quotewords/;
 
+###################
+# Early functions #
+###################
 sub stop {
     my $msg = shift;
     say '#error "' . $msg . '"';
@@ -25,20 +35,34 @@ sub comment {
     say '// ' . shift;
 }
 
+sub extract_parameters {
+    my $parameters_string = shift;
+    $parameters_string =~ s/^\s*://
+        or stop "Parameters string `$parameters_string` does not start with `:`";
+    my @parameters = quotewords ':', 1, $parameters_string;
+    my %parameters = map {s/\s+$//; my ($h, @t) = quotewords '\s+', 0, $_; $h => \@t}
+        @parameters;
+    return \%parameters;
+}
+
 ######################
 # Arguments handling #
 ######################
-stop("Usage: $0 filenames cpp noweb optional_flags")
-    if @ARGV != 3 && @ARGV != 4;
+stop("Usage: $0 filenames flags")
+    if @ARGV != 2;
+
+stop 'You must provide flags using the noweb syntax.'
+    if $ARGV[1] eq '' or ! $ARGV[1] =~ '^:';
 
 my $filenames = $ARGV[0];
-my $cpp = $ARGV[1];
-my $noweb = $ARGV[2];
+my %flags = %{extract_parameters $ARGV[1]};
+
+my $cpp = $flags{cpp};
+my $noweb = $flags{noweb};
 
 stop('At least one noweb block or cpp inclusion is needed.')
-    if($noweb eq '' && $cpp eq '');
+    if(@$noweb == 0 && @$cpp == 0);
 
-my %flags = ();
 if(@ARGV == 4) {
     foreach(split / /, $ARGV[3]) { $flags{$_} = 1}
 }
@@ -51,27 +75,9 @@ if(defined $flags{debug}) {
     }
 }
 
-##################
-# Proper imports #
-##################
-use constant {
-    MAX_DEPTH => 2
-};
-use Text::ParseWords qw/quotewords/;
-
 ##############################
 # File reading and "parsing" #
 ##############################
-sub extract_parameters {
-    my $parameters_string = shift;
-    $parameters_string =~ s/^\s*://
-        or stop "Parameters string `$parameters_string` does not start with `:`";
-    my @parameters = quotewords ':', 1, $parameters_string;
-    my %parameters = map {s/\s+$//; my ($h, @t) = quotewords '\s+', 0, $_; $h => \@t}
-        @parameters;
-    return \%parameters;
-}
-
 sub merge_into_left {
     my ($left, $right) = @_;
     $left = {} if !defined $left;
@@ -157,8 +163,8 @@ sub extract_dependencies {
     }
 }
 
-extract_dependencies(split / /, $noweb);
-foreach(split / /, $cpp) {
+extract_dependencies(@$noweb);
+foreach(@$cpp) {
     push @cpp_, $_ if !$seen_cpp{$_}++;
 }
 
