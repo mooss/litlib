@@ -147,7 +147,8 @@ sub extract_dependencies {
     foreach my $name (@_) {
         if(!$seen_noweb{$name}++) { # Kinda weird trick to use a hashtable as a set.
             my $deps = $global_dependencies{$name};
-            stop("No dependencies declared for `$name`.") if !defined $deps;
+            # I'm not sure why this script used to stop when no dependencies were declared.
+            # stop("No dependencies declared for `$name`.") if !defined $deps;
             foreach(@{$deps->{cpp}}) {
                 push @cpp_, $_ if !$seen_cpp{$_}++;
             }
