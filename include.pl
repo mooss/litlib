@@ -80,7 +80,10 @@ stop('At least one inclusion flag is required. Inclusion flags are '
 # Extract individual flags.
 my $cpp = $flags{cpp};
 my $noweb = $flags{noweb};
+my $c_string = $flags{'c-string'};
 
+stop(':c-string is incompatible with :cpp, it should only be used with :noweb.')
+    if defined $c_string and @$cpp > 0;
 
 # Apparently, it is considered "redefining" if I define a sub in an if and in its else, hence the closure.
 my $debug = sub {};
@@ -187,6 +190,27 @@ foreach(@$cpp) {
 ########################
 # Code blocks printing #
 ########################
+# Handling C strings or standard noweb inclusions.
+my $print_cb;
+if(defined $c_string) {
+    $print_cb = sub {
+        my ($prefix, $line) = @_;
+        print '"';
+        # Not sure if prefix makes any sense in this context.
+        print $prefix;
+        chomp $line;
+        print $line;
+        print '\n';
+        say '"';
+    }
+} else {
+    $print_cb = sub {
+        my ($prefix, $line) = @_;
+        print $prefix;
+        print $line;
+    }
+}
+
 sub print_codeblock_rec {
     my ($name, $prefix, $depth) = @_;
     stop "Cannot find code block named `$name`, I only know of [" .
@@ -201,8 +225,7 @@ sub print_codeblock_rec {
             if ($line =~ /(\s*)<<(.+)>>/) { # Assuming that noweb is always enabled.
                 print_codeblock_rec($2, $prefix . $1, $depth + 1);
             } else {
-                print $prefix;
-                print $line;
+                $print_cb->($prefix, $line);
             }
             ++$linum;
         }
