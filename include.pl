@@ -75,11 +75,11 @@ my %flags = %{extract_parameters $ARGV[1]};
 my @inclusion_flags = qw/cpp noweb/;
 stop('At least one inclusion flag is required. Inclusion flags are '
      . join(', ', map {':' . $_} @inclusion_flags) . '.')
-    if none(sub{@{$flags{$_[0]}} > 0}, \@inclusion_flags);
+    if none(sub{defined $flags{$_[0]} and @{$flags{$_[0]}} > 0}, \@inclusion_flags);
 
 # Extract individual flags.
-my $cpp = $flags{cpp};
-my $noweb = $flags{noweb};
+my $cpp = $flags{cpp} || [];
+my $noweb = $flags{noweb} || [];
 my $c_string = $flags{'c-string'};
 
 stop(':c-string is incompatible with :cpp, it should only be used with :noweb.')
