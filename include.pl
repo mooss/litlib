@@ -45,6 +45,20 @@ sub extract_parameters {
     return \%parameters;
 }
 
+sub any {
+    my ($predicate, $list) = @_;
+    foreach(@$list){
+        if($predicate->($_)){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+sub none {
+    return ! any @_;
+}
+
 ######################
 # Arguments handling #
 ######################
@@ -57,11 +71,16 @@ stop 'You must provide flags using the noweb syntax.'
 my $filenames = $ARGV[0];
 my %flags = %{extract_parameters $ARGV[1]};
 
+# Check for mandatory inclusion flags.
+my @inclusion_flags = qw/cpp noweb/;
+stop('At least one inclusion flag is required. Inclusion flags are '
+     . join(', ', map {':' . $_} @inclusion_flags) . '.')
+    if none(sub{@{$flags{$_[0]}} > 0}, \@inclusion_flags);
+
+# Extract individual flags.
 my $cpp = $flags{cpp};
 my $noweb = $flags{noweb};
 
-stop('At least one noweb block or cpp inclusion is needed.')
-    if(@$noweb == 0 && @$cpp == 0);
 
 # Apparently, it is considered "redefining" if I define a sub in an if and in its else, hence the closure.
 my $debug = sub {};
