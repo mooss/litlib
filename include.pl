@@ -63,10 +63,6 @@ my $noweb = $flags{noweb};
 stop('At least one noweb block or cpp inclusion is needed.')
     if(@$noweb == 0 && @$cpp == 0);
 
-if(@ARGV == 4) {
-    foreach(split / /, $ARGV[3]) { $flags{$_} = 1}
-}
-
 # Apparently, it is considered "redefining" if I define a sub in an if and in its else, hence the closure.
 my $debug = sub {};
 if(defined $flags{debug}) {
