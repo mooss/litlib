@@ -7,12 +7,10 @@
 * Prelude
 
 Mandatory include block to be able to execute examples:
-#+name: _include
-#+begin_src sh :var cpp="" noweb="" :results output :wrap "src cpp"
-./include.pl "cpp.org" "$cpp" "$noweb"
+#+name: include
+#+begin_src sh :var args="" :results output :wrap "src cpp"
+./include.pl "cpp.org" "$args"
 #+end_src
-
-This code block has a special name =_include= - prefixed by an underscore - to avoid clashing with other documents that will implement their own =include= code block.
 
 * Printing
 ** Type name to string
@@ -45,7 +43,7 @@ constexpr auto type_str() noexcept {
 
 Usage:
 #+begin_src cpp :eval no-export
-<<_include(noweb="type_str", cpp="iostream")>>
+<<include(":noweb type_str :cpp iostream")>>
 using namespace std;
 int main(){
     cout << type_str<int>() << "\n";
@@ -75,7 +73,7 @@ void print_infos() {
 
 Usage:
 #+begin_src cpp :eval no-export
-<<_include(noweb="print_infos")>>
+<<include(":noweb print_infos")>>
 using namespace std;
 
 int main(){
@@ -154,7 +152,7 @@ struct print {
 Printing to stderr is a bit weird to test because org-mode simply does not display stderr and I do not know how to fix this.
 
 #+begin_src cpp :eval no-export
-<<_include(noweb="print-function")>>
+<<include(":noweb print-function")>>
 using namespace print_;
 
 int main(){
@@ -194,7 +192,7 @@ void operator()(Args... args) {
 Now it's possible to customize the print "function" by first constructing it with a =printer::format= and then using its parentheses operator to print stuff.
 
 #+begin_src cpp :eval no-export
-<<_include(noweb="print-function")>>
+<<include(":noweb print-function")>>
 
 int main() {
     print{{.sep=" -> ", .end=", this is the end.\n"}}(1, "two", int(7.5 -4), 2. * 2);
@@ -213,7 +211,7 @@ Some added bonuses:
  2. The formatting parameters can also be used individually.
 
 #+begin_src cpp :eval no-export
-<<_include(noweb="print-function")>>
+<<include(":noweb print-function")>>
 
 int main() {
     auto printer = print{{.sep=" < "}};
@@ -237,7 +235,7 @@ Some disadvantages:
  2. Parameters must be in the correct order, src_cpp[]{print{{.end="\n", .sep=", "}}("test");} will not compile.
  3. It's possible to make an incorrect call by mistake without it triggering a compilation error.
     #+begin_src cpp :eval no-export
-<<_include(noweb="print-function")>>
+<<include(":noweb print-function")>>
 int main() {
     print{.sep=", ", .end="\n"}("test");
 }
