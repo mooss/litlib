@@ -64,7 +64,7 @@ double
 
 #+name: print_infos
 #+begin_src cpp :noweb-ref litlib
-template <typename T>
+template<typename T>
 void print_infos() {
     std::cout << type_str<T>() << " -> " << sizeof(T) << " bytes\n";
 }
@@ -253,3 +253,107 @@ int main() {
 
     So my guideline would be to use braces when using the default formatting and parens when using custom formatting.
 
+** Log function call
+
+The goal here is to make a tool that will make it easy to log the function calls being done, for debugging purposes.
+Since this tool was a bit complex to put in place, some implementation details have been hidden inside the namespace =details=:
+#+begin_src cpp :noweb-ref log_call
+namespace details {
+<<details/log_call>>
+}
+#+end_src
+#+depends:log_call :cpp string iostream
+
+*** Arguments logging
+
+Most arguments are logged as-is, except for strings which are enclosed in quote, to make things more readable.
+#+begin_src cpp :noweb-ref details/log_call
+template<typename T>
+void log_one_argument(const T& arg) {
+    std::cout << arg;
+}
+
+void log_one_argument(const char* arg) {
+    std::cout << '"' << arg << '"';
+}
+
+void log_one_argument(const std::string& arg) {
+    log_one_argument(arg.c_str());
+}
+#+end_src
+
+The heavy lifting of arguments logging is done by the three function below, who respectively handle the case where no arguments are left, the case where one argument is left and the case where more than one argument is left.
+In essence, a call to =log_call_arguments= is resolved with recursive calls to the last function, which progressively consumes the =tail= and the other function are special cases to tidy up the output.
+#+begin_src cpp :noweb-ref details/log_call
+void log_call_arguments() {
+    std::cout << ");\n";
+}
+
+template<typename T>
+void log_call_arguments(const T& last) {
+    log_one_argument(last);
+    log_call_arguments();
+}
+
+template<typename T, typename... Args>
+void log_call_arguments(const T& head, Args... tail) {
+    log_one_argument(head);
+    std::cout << ", ";
+    log_call_arguments(tail...);
+}
+#+end_src
+
+
+*** =log_call=
+
+Most of what is needed to log simple function calls is handled by =log_call_arguments=, only the function name and the opening paren is missing:
+#+begin_src cpp :noweb-ref log_call
+template<typename... Args>
+void log_call(const char* function_name, Args... args) {
+    std::cout << function_name << '(';
+    details::log_call_arguments(args...);
+}
+#+end_src
+
+In practice, using this function looks like this:
+#+begin_src cpp :eval no-export
+<<include(":noweb log_call")>>
+
+int main() {
+    auto sixteen = 16;
+    auto twenty_three = 23;
+    const char* forty_two = "forty two";
+    log_call("log_call", 4, 8, 15, sixteen, twenty_three, forty_two, std::string("string"));
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+log_call(4, 8, 15, 16, 23, "forty two", "string");
+#+end_src
+
+*** Macro
+
+This very handy macro can be used to both log and then call a function:
+#+begin_src cpp :noweb-ref log_call
+#define LOG_AND_CALL(function, ...) log_call(#function, __VA_ARGS__); function(__VA_ARGS__);
+#+end_src
+
+Usage example:
+#+begin_src cpp :eval no-export
+<<include(":noweb log_call")>>
+
+void hello(const std::string& message) {
+    std::cout << "hello, " << message << "\n";
+}
+
+int main() {
+    LOG_AND_CALL(hello, "universe!")
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+hello("universe!");
+hello, universe!
+#+end_src
