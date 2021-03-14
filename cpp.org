@@ -253,7 +253,8 @@ int main() {
 
     So my guideline would be to use braces when using the default formatting and parens when using custom formatting.
 
-** Log function call
+
+** Log function calls
 
 The goal here is to make a tool that will make it easy to log the function calls being done, for debugging purposes.
 Since this tool was a bit complex to put in place, some implementation details have been hidden inside the namespace =details=:
@@ -303,14 +304,13 @@ void log_call_arguments(const T& head, Args... tail) {
 }
 #+end_src
 
-
 *** =log_call=
 
 Most of what is needed to log simple function calls is handled by =log_call_arguments=, only the function name and the opening paren is missing:
 #+begin_src cpp :noweb-ref log_call
 template<typename... Args>
 void log_call(const char* function_name, Args... args) {
-    std::cout << function_name << '(';
+    std::cout << "-> " << function_name << '(';
     details::log_call_arguments(args...);
 }
 #+end_src
@@ -354,6 +354,6 @@ int main() {
 
 #+RESULTS:
 #+begin_src text
-hello("universe!");
+-> hello("universe!");
 hello, universe!
 #+end_src
