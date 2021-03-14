@@ -12,7 +12,134 @@ Mandatory include block to be able to execute examples:
 ./include.pl "cpp.org" "$args"
 #+end_src
 
+* Executable utilities
+
+This section regroups code blocks that can be executed from other org-mode files, using a syntax like this:
+#+begin_src cpp :noweb no
+<<litlib/cpp.org:code_block_name()>>
+#+end_src
+
+Not very useful for now overall, because =include.pl= lacks the functionality to execute code blocks.
+# TODO: Add this much-needed functionality. This might prove (very) difficult.
+
+** Special members generation
+
+What is meant by special members are the following elements:
+ - Copy constructor.
+ - Copy assignment operator.
+ - Move constructor.
+ - Move assignment operator.
+ - Default constructor.
+ - Destructor.
+
+#+name: special_members
+#+begin_src perl :var args="" :results output
+use strict;
+use warnings;
+use v5.14;
+use Text::ParseWords qw/quotewords/;
+
+sub extract_parameters {
+    my $parameters_string = shift;
+    $parameters_string =~ s/^\s*://
+        or die "Parameters string `$parameters_string` does not start with `:`";
+    my @parameters = quotewords ':', 1, $parameters_string;
+    my %parameters = map {s/\s+$//; my ($h, @t) = quotewords '\s+', 0, $_; $h => \@t}
+        @parameters;
+    return \%parameters;
+}
+
+my %flags = %{extract_parameters $args};
+
+sub take_all {
+    my $what = shift;
+    return @{ delete($flags{$what}) // []};
+}
+
+sub format_array {
+    my $array = shift;
+    return "[" . join(", ", @$array) . "]";
+}
+
+sub take_one {
+    my $what = shift;
+    my @params = take_all $what;
+    die "Precisely one value for :$what is required, got " . format_array(\@params) . "."
+        if @params != 1;
+    return $params[0];
+}
+
+sub present {
+    my $what = shift;
+    if(defined $flags{$what}) {
+        die ":$what is a boolean flag and therefore does not accept any value."
+            if @{$flags{$what}} != 0;
+        return 1;
+    }
+    return 0;
+}
+
+my $name = take_one('name');
+my @default = take_all('default');
+my @delete = take_all('delete');
+
+my %shortcuts = (
+    'move-only' => [[qw/move move=/], [qw/copy copy= empty/]]
+);
+
+my $selected_shortcut;
+foreach(keys %shortcuts) {
+    if(present $_) {
+        die "Cannot use more than one shortcut but :$selected_shortcut and :$_ are present."
+            if defined $selected_shortcut;
+        $selected_shortcut = $_;
+    }
+}
+
+if(defined $selected_shortcut) {
+    die "Shortcuts are mutually exclusive with :default and :delete."
+        if @default != 0 or @delete != 0;
+    @default = @{$shortcuts{$selected_shortcut}->[0]};
+    @delete  = @{$shortcuts{$selected_shortcut}->[1]};
+}
+
+my %signatures = (
+    'move'  => "$name($name&&)",
+    'move=' => "$name& operator=($name&&)",
+    'copy'  => "$name(const $name&)",
+    'copy=' => "$name& operator=(const $name&)",
+    'empty' => "$name()"
+);
+
+die "Nothing to generate, :default and :delete are empty."
+    if @default == 0 and @delete == 0;
+
+foreach(@default) {
+    die "Invalid default name `$_`."
+        if !defined $signatures{$_};
+    say $signatures{$_} . '=default;';
+}
+
+foreach(@delete) {
+    die "Invalid delete name `$_`."
+        if !defined $signatures{$_};
+    say $signatures{$_} . '=delete;';
+}
+#+end_src
+
+#+call: special_members(":name vertices :move-only")
+
+#+RESULTS:
+#+begin_src text
+vertices(vertices&&)=default;
+vertices& operator=(vertices&&)=default;
+vertices(const vertices&)=delete;
+vertices& operator=(const vertices&)=delete;
+vertices()=delete;
+#+end_src
+
 * Printing
+
 ** Type name to string
 From https://stackoverflow.com/a/56766138.
 
@@ -60,6 +187,7 @@ const long int
 double
 #+end_src
 
+
 ** Type printer (=print_infos=)
 
 #+name: print_infos
@@ -90,6 +218,7 @@ int -> 4 bytes
 const long int -> 8 bytes
 double -> 8 bytes
 #+end_src
+
 
 ** Print function
 
