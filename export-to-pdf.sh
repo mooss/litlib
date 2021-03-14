@@ -10,18 +10,23 @@ then
     exit 1
 fi
 
-source=$1
-destination=$2
+source="$1"
+destination="$2"
 
-pandoc --standalone\
-       --to latex $source\
-       --output $destination\
-       --include-in-header $where/preamble.tex\
-       --highlight-style tango\
-       --variable documentclass:report\
-       --variable geometry:margin=2.5cm\
-       --variable papersize:a4paper\
-       --table-of-content\
-       --toc-depth 5\
-       --citeproc\
-       --variable lang:en
+function process_source() {
+    cat "$source"
+}
+
+process_source | pandoc --standalone\
+                        --from org\
+                        --to latex\
+                        --output "$destination"\
+                        --include-in-header "$where/preamble.tex"\
+                        --highlight-style tango\
+                        --variable documentclass:report\
+                        --variable geometry:margin=2.5cm\
+                        --variable papersize:a4paper\
+                        --table-of-content\
+                        --toc-depth 5\
+                        --citeproc\
+                        --variable lang:en
