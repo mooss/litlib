@@ -514,14 +514,16 @@ It would perhaps be better, cleaner and compatible with C arrays to use =std::sp
 I don't know the implications but I might consider it later.
 
 Usage example:
-#+begin_src cpp :eval no-export :flags -Wall -std=c++17 :noweb no-export
-<<include(":noweb sum print-function :cpp vector array")>>
+#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export
+<<include(":noweb sum print-function :cpp vector array span")>>
 
 int main() {
     std::vector<int> lost_v{4, 8, 15, 16, 23, 42};
     std::array<int, 6> lost_a{4, 8, 15, 16, 23, 42};
+    std::span<int> lost_s(lost_v);
     print{"Sum of lost numbers with a std::vector:", lit::sum(lost_v)};
     print{"Same thing with a std::array:", lit::sum(lost_a)};
+    print{"Same thing with a std::span:", lit::sum(lost_s)};
 }
 #+end_src
 
@@ -529,4 +531,5 @@ int main() {
 #+begin_src text
 Sum of lost numbers with a std::vector: 108
 Same thing with a std::array: 108
+Same thing with a std::span: 108
 #+end_src
