@@ -12,6 +12,7 @@ Mandatory include block to be able to execute examples:
 ./include.pl "cpp.org" "$args"
 #+end_src
 
+
 * Executable utilities
 
 This section regroups code blocks that can be executed from other org-mode files, using a syntax like this:
@@ -138,7 +139,9 @@ vertices& operator=(const vertices&)=delete;
 vertices()=delete;
 #+end_src
 
+
 * Printing
+
 
 ** Type name to string
 From https://stackoverflow.com/a/56766138.
@@ -485,4 +488,45 @@ int main() {
 #+begin_src text
 -> hello("universe!");
 hello, universe!
+#+end_src
+
+
+* Numerical operations
+
+** Sum of a container
+
+I didn't like the idea of using =std::accumulate= with a begin iterator, a end iterator and a mandatory neutral element so I made the following =sum= template for a more Python-like experience.
+
+#+name: sum
+#+begin_src cpp
+namespace lit {
+template<class Container>
+typename Container::value_type sum(const Container& source, typename Container::value_type neutral=0) {
+    for(const auto& el: source)
+        neutral += el;
+    return neutral;
+}
+}
+#+end_src
+
+This template is not compatible with C arrays.
+It would perhaps be better, cleaner and compatible with C arrays to use =std::span= rather than a templated function.
+I don't know the implications but I might consider it later.
+
+Usage example:
+#+begin_src cpp :eval no-export :flags -Wall -std=c++17 :noweb no-export
+<<include(":noweb sum print-function :cpp vector array")>>
+
+int main() {
+    std::vector<int> lost_v{4, 8, 15, 16, 23, 42};
+    std::array<int, 6> lost_a{4, 8, 15, 16, 23, 42};
+    print{"Sum of lost numbers with a std::vector:", lit::sum(lost_v)};
+    print{"Same thing with a std::array:", lit::sum(lost_a)};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+Sum of lost numbers with a std::vector: 108
+Same thing with a std::array: 108
 #+end_src
