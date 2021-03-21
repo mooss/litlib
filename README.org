@@ -26,8 +26,8 @@ The =include.pl= script analyses a given document and outputs its noweb and cpp 
 The way to use it in another project is to define an =include= code block in bash, like so:
 #+begin_src org
 ,#+name: include
-,#+begin_src sh :var cpp="" noweb="" :results output :wrap "src cpp"
-./litlib/include.pl "current_filename.org other_files.org" "$cpp" "$noweb"
+,#+begin_src sh :var args="" :results output :wrap "src cpp"
+./litlib/include.pl "current_filename.org other_files.org" "$args"
 ,#+end_src
 #+end_src
 
