@@ -172,7 +172,7 @@ constexpr auto type_str() noexcept {
 #+depends:type_str :cpp string_view
 
 Usage:
-#+begin_src cpp :eval no-export
+#+begin_src cpp :eval no-export :exports both
 <<include(":noweb type_str :cpp iostream")>>
 using namespace std;
 int main(){
@@ -203,7 +203,7 @@ void print_infos() {
 #+depends:print_infos :cpp iostream :noweb type_str
 
 Usage:
-#+begin_src cpp :eval no-export
+#+begin_src cpp :eval no-export :exports both
 <<include(":noweb print_infos")>>
 using namespace std;
 
@@ -283,7 +283,7 @@ struct print {
 
 Printing to stderr is a bit weird to test because org-mode simply does not display stderr and I do not know how to fix this.
 
-#+begin_src cpp :eval no-export
+#+begin_src cpp :eval no-export :exports both
 <<include(":noweb print-function")>>
 using namespace print_;
 
@@ -323,7 +323,7 @@ void operator()(Args... args) {
 
 Now it's possible to customize the print "function" by first constructing it with a =printer::format= and then using its parentheses operator to print stuff.
 
-#+begin_src cpp :eval no-export
+#+begin_src cpp :eval no-export :exports both
 <<include(":noweb print-function")>>
 
 int main() {
@@ -342,7 +342,7 @@ Some added bonuses:
  1. It's possible to construct a printer object and to reuse it at will.
  2. The formatting parameters can also be used individually.
 
-#+begin_src cpp :eval no-export
+#+begin_src cpp :eval no-export :exports both
 <<include(":noweb print-function")>>
 
 int main() {
@@ -366,7 +366,7 @@ Some disadvantages:
  1. The double braced syntax is a bit wonky.
  2. Parameters must be in the correct order, src_cpp[]{print{{.end="\n", .sep=", "}}("test");} will not compile.
  3. It's possible to make an incorrect call by mistake without it triggering a compilation error.
-    #+begin_src cpp :eval no-export
+    #+begin_src cpp :eval no-export :exports both
 <<include(":noweb print-function")>>
 int main() {
     print{.sep=", ", .end="\n"}("test");
@@ -448,7 +448,7 @@ void log_call(const char* function_name, Args... args) {
 #+end_src
 
 In practice, using this function looks like this:
-#+begin_src cpp :eval no-export
+#+begin_src cpp :eval no-export :exports both
 <<include(":noweb log_call")>>
 
 int main() {
@@ -461,7 +461,7 @@ int main() {
 
 #+RESULTS:
 #+begin_src text
-log_call(4, 8, 15, 16, 23, "forty two", "string");
+-> log_call(4, 8, 15, 16, 23, "forty two", "string");
 #+end_src
 
 *** Macro
@@ -472,7 +472,7 @@ This very handy macro can be used to both log and then call a function:
 #+end_src
 
 Usage example:
-#+begin_src cpp :eval no-export
+#+begin_src cpp :eval no-export :exports both
 <<include(":noweb log_call")>>
 
 void hello(const std::string& message) {
@@ -514,7 +514,7 @@ It would perhaps be better, cleaner and compatible with C arrays to use =std::sp
 I don't know the implications but I might consider it later.
 
 Usage example:
-#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export
+#+begin_src cpp :eval no-export :exports both
 <<include(":noweb sum print-function :cpp vector array span")>>
 
 int main() {
