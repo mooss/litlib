@@ -35,8 +35,8 @@ As implied by the usage of double quotes to supply space-separated files to =inc
 
 In this version of the =include= code block, we use this file and =cpp.org= as sources:
 #+name: include
-#+begin_src sh :var cpp="" noweb="" :results output :wrap "src cpp" :exports code
-./include.pl "README.org cpp.org" "$cpp" "$noweb"
+#+begin_src sh :var args="" :results output :wrap "src cpp" :exports code
+./include.pl "README.org cpp.org" "$args"
 #+end_src
 
 Afterwards, given the following =test= code block:
@@ -57,7 +57,7 @@ With its dependencies defined as such:
 One can include it with all its dependencies with the following:
 #+begin_src cpp :noweb yes :exports both :wrap "src text"
 // Adding <vector> just for the hell of it.
-<<include(cpp="vector", noweb="test")>>
+<<include(":noweb test :cpp vector")>>
 #+end_src
 
 #+RESULTS:
@@ -71,10 +71,10 @@ When in doubt about the =include= code block, one can troubleshoot its invocatio
 #+end_src
 
 Which gives us:
-#+call: include(cpp="vector", noweb="test") :wrap "src cpp :exports code"
+#+call: include(":noweb test :cpp vector") :exports both :wrap "src cpp"
 
 #+RESULTS:
-#+begin_src cpp :exports code
+#+begin_src cpp
 #include <iostream>
 #include <vector>
 int main(){
@@ -85,7 +85,7 @@ int main(){
 
 Since =cpp.org= was included as a source, we can use the =print= function defined in it:
 #+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export
-<<include(noweb="print-function")>>
+<<include(":noweb print-function")>>
 int main(){
     print{"Let's print the lost numbers:", 4, 8, 15, 16, 23, 42};
 }
@@ -97,3 +97,4 @@ Let's print the lost numbers: 4 8 15 16 23 42
 :end:
 
 This is just a basic example, this script is really useful when using a lot of code blocks, each having their own set of overlapping noweb and C++ dependencies.
+Though I suspect it will not scale well when used across a lot of big files.
