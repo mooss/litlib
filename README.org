@@ -5,8 +5,6 @@ This project is an attempt to put in place tools and a consistent style for lite
 
 It is currently centered around C++ and org-mode.
 
-Disclaimer: github seems to refuse to show code block results so this document is a bit broken when seen on github.
-
 * Literate style
 
  1. *No inclusion in library blocks.*
@@ -15,9 +13,9 @@ Disclaimer: github seems to refuse to show code block results so this document i
     This is because C++ is picky about redeclaration.
 
     To handle the problem of C++ and noweb dependencies, I made the following syntax to declare the dependencies of a given code block:
-    #+begin_src org
+#+begin_src org
 ,#+depends:code-block-name :cpp space separated cpp header list :noweb same deal
-    #+end_src
+#+end_src
     I also made a companion script (=include.pl=) to interpret this syntax, as explained in the following section.
 
 * =include.pl= presentation
@@ -67,13 +65,13 @@ Extensive testing.
 
 When in doubt about the =include= code block, one can troubleshoot its invocation by calling the code block directly within org-mode, using the =#+call= syntax with the desired additional parameter (here I'm using =:wrap src cpp=):
 #+begin_src org
-,#+call: include(cpp="vector", noweb="test") :wrap src cpp
+,#+call: include(":noweb test :cpp vector") :wrap "src cpp"
 #+end_src
 
 Which gives us:
-#+call: include(":noweb test :cpp vector") :exports both :wrap "src cpp"
+#+call: include(":noweb test :cpp vector") :wrap "src cpp"
 
-#+RESULTS:
+# I removed #+RESULTS: manually otherwise it would not show on github.
 #+begin_src cpp
 #include <iostream>
 #include <vector>
