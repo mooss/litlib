@@ -14,7 +14,8 @@ source="$1"
 destination="$2"
 
 function process_source() {
-    cat "$source"
+    # jupyter-python blocks do not render as python when compiled with pandoc.
+    sed -e 's|^#+begin_src jupyter-python|#+begin_src python|' "$source"
 }
 
 process_source | pandoc --standalone\
