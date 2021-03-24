@@ -1,6 +1,6 @@
 #+title: Literate programming library
 
-* About
+* About LitLib
 This project is an attempt to put in place tools and a consistent style for literate programming to be used in other projects.
 
 It is currently centered around C++ and org-mode.

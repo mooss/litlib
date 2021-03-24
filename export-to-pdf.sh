@@ -30,4 +30,5 @@ process_source | pandoc --standalone\
                         --table-of-content\
                         --toc-depth 5\
                         --citeproc\
-                        --variable lang:en
+                        --variable lang:en\
+                        --lua-filter "$where/filters/minipage.lua"\
