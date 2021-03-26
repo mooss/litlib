@@ -190,7 +190,7 @@ foreach(@$cpp) {
 ########################
 # Code blocks printing #
 ########################
-# Handling C strings or standard noweb inclusions.
+# The output difference between C strings and standard noweb inclusions is handled here.
 my $print_cb;
 if(defined $c_string) {
     $print_cb = sub {
@@ -225,6 +225,12 @@ sub print_codeblock_rec {
             if ($line =~ /(\s*)<<(.+)>>/) { # Assuming that noweb is always enabled.
                 print_codeblock_rec($2, $prefix . $1, $depth + 1);
             } else {
+                # Lines starting with `#+` are a syntax specific to org mode.
+                # To handle code blocks with lines starting with this syntax, org-mode automatically
+                # escapes them by adding a comma in front.
+                # Hence the next line to undo this escaping and print the code blocks as they are
+                # supposed to be.
+                $line =~ s/^,(,*)#\+/$1#+/; # Only one comma is removed the other must be kept.
                 $print_cb->($prefix, $line);
             }
             ++$linum;
