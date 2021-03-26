@@ -9,7 +9,6 @@ The goal of this filter is to start from org documents with code blocks having a
 ,#+begin_src text :minipage :exports both
 Minipage defined as a noweb argument.
 ,#+end_src
-,#+depends:minipage_ex :cpp nothing in fact :noweb ok lets go
 #+end_src
 
 And to transform them to a block surrounded by embedded latex latex instructions (the target code block):
@@ -21,8 +20,6 @@ Minipage defined as embedded latex instructions.
 ,#+end_src
 ,#+latex: \end{minipage}
 #+end_src
-
-# I have no idea wether #+name should be before of after the first two #+latex.
 
 ** Analysis
 
@@ -59,13 +56,6 @@ pandoc -s minipage-noweb-arg.org -t json | json_pp
             "Minipage defined as a noweb argument.\n"
          ],
          "t" : "CodeBlock"
-      },
-      {
-         "c" : [
-            "org",
-            "#+depends:minipage_ex :cpp nothing in fact :noweb ok lets go"
-         ],
-         "t" : "RawBlock"
       }
    ],
    "meta" : {},
@@ -188,7 +178,6 @@ pandoc -s minipage-noweb-arg.org -t org --lua-filter filters/minipage.lua
 ,#+end_example
 
 \end{minipage}
-,#+depends:minipage_ex :cpp nothing in fact :noweb ok lets go
 #+end_src
 
 For further testing, generating the pdf for this document (with =make pandoc.pdf=) should suffice.
