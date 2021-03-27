@@ -30,9 +30,10 @@ For example, a call to =pandoc-org= will look like =#+call: pandoc-org("example"
 *** Code block inclusion
 
 =include.pl= setup, as explained in =README.org=.
+=:noweb= is hardcoded because only noweb inclusions are used here.
 #+name: include
-#+begin_src bash :var args="" :wrap "src lua"
-./include.pl pandoc.org "$args"
+#+begin_src bash :var noweb=""
+./include.pl pandoc.org ":noweb $noweb"
 #+end_src
 
 * Lua utils
@@ -76,7 +77,7 @@ end
 
 Usage example:
 #+begin_src lua
-<<include(":noweb next_endquote")>>
+<<include("next_endquote")>>
 
 function test_next_endquote(str)
    until_endquote = str:sub(1, next_endquote(str, 2))
