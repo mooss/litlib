@@ -48,8 +48,8 @@ If the unescaped character is not found, the length of the string (aka the posit
 #+name: next_unescaped
 #+begin_src lua :eval never
 function next_unescaped(str, char, position)
-   backslash = string.byte("\\")
    target = string.byte(char)
+   backslash = string.byte('\\')
    was_backslash = str:byte(position) == backslash
    while position < #str do
       if not was_backslash then
@@ -70,7 +70,7 @@ Below is a function illustrating its intended usage, extracting quoted substring
 #+name: next_endquote
 #+begin_src lua
 function next_endquote(str, position)
-   return next_unescaped(str, "\"", position)
+   return next_unescaped(str, '"', position)
 end
 #+end_src
 #+depends:next_endquote :noweb next_unescaped
@@ -81,12 +81,12 @@ Usage example:
 
 function test_next_endquote(str)
    until_endquote = str:sub(1, next_endquote(str, 2))
-   print(">", "`" .. until_endquote .. "`")
+   print('>', '`' .. until_endquote .. '`')
 end
 
-test_next_endquote("There is no endquote.")
-test_next_endquote("There is an endquote\", this should not appear.")
-test_next_endquote("\"Mind the \\\" backslashes\".")
+test_next_endquote('There is no endquote.')
+test_next_endquote('There is an endquote", this should not appear.')
+test_next_endquote('"Mind the \\" backslashes".')
 #+end_src
 
 #+RESULTS:
@@ -237,7 +237,7 @@ A few Lua and pandoc tricks to fully understand the implementation below:
 #+begin_src lua :tangle filters/minipage.lua :exports code
 local function has_minipage(block)
    for _, meta in ipairs(block.attributes) do
-      if #meta >= 2 and meta[1] == "minipage" and meta[2] == "yes" then
+      if #meta >= 2 and meta[1] == 'minipage' and meta[2] == 'yes' then
          return true
       end
    end
@@ -247,9 +247,9 @@ end
 function CodeBlock(block)
    if has_minipage(block) then
       return {
-         pandoc.RawBlock("latex", "\\begin{minipage}{0.95\\textwidth}"),
+         pandoc.RawBlock('latex', '\\begin{minipage}{0.95\\textwidth}'),
          block,
-         pandoc.RawBlock("latex", "\\end{minipage}")
+         pandoc.RawBlock('latex', '\\end{minipage}')
       }
    end
    return nil
