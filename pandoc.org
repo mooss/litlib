@@ -1,12 +1,13 @@
 #+title: Pandoc filters for org documents
-#+property: header-args :wrap "src text :minipage" :eval no-export :noweb no-export
+#+property: header-args :wrap "src text :minipage" :eval no-export :noweb no-export :results output drawer
 
 * Prelude
 
 This document is about altering the structure of generated documents with pandoc filters and by doing that, adding features that will enhance the quality of literate documents.
 
-** Tools
+** Noweb tools
 
+*** Pandoc output exploration
 The following code block will export a =org= code block to a prettified json exposing pandoc's representation.
 It's the first tool to reach for when trying to manipulate pandoc's output.
 
@@ -25,6 +26,74 @@ It's more useful than it looks at first glance, because it can be used to apply 
 
 Those code blocks can be called from anywhere in this document with org mode's =#+call:= syntax.
 For example, a call to =pandoc-org= will look like =#+call: pandoc-org("example", "--filters some-filter.lua")=.
+
+*** Code block inclusion
+
+=include.pl= setup, as explained in =README.org=.
+#+name: include
+#+begin_src bash :var args="" :wrap "src lua"
+./include.pl pandoc.org "$args"
+#+end_src
+
+* Lua utils
+
+** String manipulation
+
+*** Character searching
+
+The following function returns the position of the first unescaped character in a given substring.
+If the unescaped character is not found, the length of the string (aka the position of the last character) is returned.
+
+#+name: next_unescaped
+#+begin_src lua :eval never
+function next_unescaped(str, char, position)
+   backslash = string.byte("\\")
+   target = string.byte(char)
+   was_backslash = str:byte(position) == backslash
+   while position < #str do
+      if not was_backslash then
+         if str:byte(position) == target then
+            return position
+         end
+         was_backslash = str:byte(position) == backslash
+      else
+         was_backslash = false
+      end
+      position = position + 1
+   end
+   return position
+end
+#+end_src
+
+Below is a function illustrating its intended usage, extracting quoted substrings.
+#+name: next_endquote
+#+begin_src lua
+function next_endquote(str, position)
+   return next_unescaped(str, "\"", position)
+end
+#+end_src
+#+depends:next_endquote :noweb next_unescaped
+
+Usage example:
+#+begin_src lua
+<<include(":noweb next_endquote")>>
+
+function test_next_endquote(str)
+   until_endquote = str:sub(1, next_endquote(str, 2))
+   print(">", "`" .. until_endquote .. "`")
+end
+
+test_next_endquote("There is no endquote.")
+test_next_endquote("There is an endquote\", this should not appear.")
+test_next_endquote("\"Mind the \\\" backslashes\".")
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+>	`There is no endquote.`
+>	`There is an endquote"`
+>	`"Mind the \" backslashes"`
+#+end_src
 
 * Minipage generation
 
