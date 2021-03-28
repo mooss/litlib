@@ -182,7 +182,8 @@ A few Lua and pandoc tricks to fully understand the implementation below:
  - Returning =nil= means that the element should not be changed.
  - Returning a table means that I want the elements of this table to be merged in place, where the original element was.
 
-#+begin_src lua :tangle filters/minipage.lua :eval never
+#+name: minipage
+#+begin_src lua :eval never
 local function has_minipage(block)
    for _, meta in ipairs(block.attributes) do
       if #meta >= 2 and meta[1] == 'minipage' and meta[2] == 'yes' then
@@ -203,6 +204,7 @@ function CodeBlock(block)
    return nil
 end
 #+end_src
+#+tangle:minipage filters/minipage.lua
 
 ** Testing
 
@@ -236,14 +238,14 @@ To make the difference and since org-mode is case insensitive, only capitalised 
 
 The call directive in the first line below should be exported as the line after.
 In particular, the name of the code block and its arguments should be exported, but not the subsequent noweb arguments (=:noweb-arg 4 8 15=).
-#+name: noweb-call
+#+name: noweb-call-analysis
 #+begin_src org
 ,#+Call: lost("argument", "16 23 42") :noweb-arg 4 8 15
 ,*Call to* =lost("argument", "16 23 42"):=
 #+end_src
 
 Pandoc ast shows that the block is included as-is inside an org =RawBlock=:
-#+Call: pandoc-json("noweb-call") :wrap "src js :minipage"
+#+Call: pandoc-json("noweb-call-analysis") :wrap "src js :minipage"
 
 #+RESULTS:
 #+begin_src js :minipage
@@ -309,8 +311,8 @@ The bulk of the processing shown here is a slight tweaking of the output.
 The call is defined as Python code in order to have syntactic coloration on the strings.
 It will probably need some adjustments to avoid conflicting with Python's keywords.
 
-#+begin_src lua :tangle filters/noweb-call.lua
-<<include("tokenise")>>
+#+name: noweb-call
+#+begin_src lua
 function RawBlock(block)
    if block.format == 'org' then
       tokens = tokenise(block.text)
@@ -337,8 +339,10 @@ function RawBlock(block)
    return nil
 end
 #+end_src
+#+depends:noweb-call :noweb tokenise
+#+tangle:noweb-call filters/noweb-call.lua
 
-#+Call: pandoc-org("noweb-call", "--lua-filter filters/noweb-call.lua") :wrap "src org :minipage"
+#+Call: pandoc-org("noweb-call-analysis", "--lua-filter filters/noweb-call.lua") :wrap "src org :minipage"
 
 #+RESULTS:
 #+begin_src org :minipage

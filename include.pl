@@ -21,6 +21,7 @@ use constant {
     MAX_DEPTH => 2
 };
 use Text::ParseWords qw/quotewords/;
+use File::Basename;
 
 ###################
 # Early functions #
@@ -71,19 +72,31 @@ stop 'You must provide flags using the noweb syntax.'
 my $filenames = $ARGV[0];
 my %flags = %{extract_parameters $ARGV[1]};
 
-# Check for mandatory inclusion flags.
+# Check for mandatory flags.
 my @inclusion_flags = qw/cpp noweb/;
-stop('At least one inclusion flag is required. Inclusion flags are '
-     . join(', ', map {':' . $_} @inclusion_flags) . '.')
-    if none(sub{defined $flags{$_[0]} and @{$flags{$_[0]}} > 0}, \@inclusion_flags);
+my @standalone_boolean_flags = qw/tangle/;
+my @mandatory_flags = @inclusion_flags; push @mandatory_flags, @standalone_boolean_flags;
+# Bad error message but it would be too much work to make it clearer.
+stop('At least one of the following flags is required: '
+     . join(', ', map {':' . $_} @mandatory_flags) . '.')
+    if none(sub{defined $flags{$_[0]} and @{$flags{$_[0]}} > 0}, \@inclusion_flags)
+    and none(sub{defined $flags{$_[0]}}, \@standalone_boolean_flags);
+
+# The inclusion of a tangling operation in this script is dubious since that's not something an "include"
+# script should do but it was easy enough to put in place and include.pl is supposed to be temporary
+# though I expect it will take a long time to replace it with a cleaner approach.
 
 # Extract individual flags.
 my $cpp = $flags{cpp} || [];
 my $noweb = $flags{noweb} || [];
 my $c_string = $flags{'c-string'};
+my $tangle = defined $flags{tangle};
 
 stop(':c-string is incompatible with :cpp, it should only be used with :noweb.')
     if defined $c_string and @$cpp > 0;
+
+stop(':tangle is incompatible with :cpp and :noweb.')
+    if $tangle and (@$cpp > 0 or @$noweb > 0);
 
 # Apparently, it is considered "redefining" if I define a sub in an if and in its else, hence the closure.
 my $debug = sub {};
@@ -91,6 +104,14 @@ if(defined $flags{debug}) {
     $debug = sub {
         comment 'DBG: ' . shift;
     }
+}
+
+#####################
+# Utility functions #
+#####################
+sub make_necessary_dir {
+    my $dirname = dirname(shift);
+    mkdir $dirname unless -d $dirname;
 }
 
 ##############################
@@ -104,7 +125,7 @@ sub merge_into_left {
     }
 }
 
-my (@global_lines, %global_named_blocks, %global_dependencies, %reffed);
+my (@global_lines, %global_named_blocks, %global_dependencies, %reffed, %global_tangle);
 sub lines_and_blocks {
     foreach my $filename (split / /, $filenames) {
         open(my $file, '<', $filename)
@@ -113,6 +134,7 @@ sub lines_and_blocks {
             push @global_lines, $_;
         }
     }
+
     my %named;
     for(my $num = 0; $num < @global_lines; ++$num) {
         my $line = $global_lines[$num];
@@ -141,6 +163,12 @@ sub lines_and_blocks {
         } elsif($line =~ /^\s*#\+depends:([^\s]+)\s+(.*)/) {
             stop "Dependency duplicate `$1`." if exists $global_dependencies{$1};
             $global_dependencies{$1} = extract_parameters($2);
+
+        } elsif($tangle and $line =~ /^\s*#\+tangle:([^\s]+)\s+(.*)/) {
+            # Tangling has its own #+tangle: directive because org-mode has no way to resolve the #+depends:
+            # syntax.
+            # Thus it's better to bypass entirely the :tangle noweb argument.
+            $global_tangle{$1} = $2;
         }
     }
 
@@ -180,11 +208,6 @@ sub extract_dependencies {
             push @noweb_dependencies, $name;
         }
     }
-}
-
-extract_dependencies(@$noweb);
-foreach(@$cpp) {
-    push @cpp_dependencies, $_ if !$seen_cpp{$_}++;
 }
 
 ########################
@@ -248,6 +271,33 @@ sub print_codeblock {
         foreach(@{$reffed{$name}}) { $already_printed{$_} = undef; }
     }
     print_codeblock_rec($name, '', 0);
+};
+
+###########################
+# Putting it all together #
+###########################
+if($tangle) {
+    while(my ($name, $destination) = each %global_tangle) {
+        # Extract the dependencies *only* for the code block to tangle.
+        @noweb_dependencies = ();
+        extract_dependencies($name);
+
+        make_necessary_dir($destination);
+        open(my $dest_handle, '>:encoding(UTF-8)', $destination)
+            or die "Failed to open `$1`.";
+        select $dest_handle; # select STDOUT to restore STDOUT as the default output file.
+        foreach(@noweb_dependencies) {
+            print_codeblock($_);
+        }
+        close $dest_handle;
+    }
+    exit; # Tangling is done at the exclusion of anything else.
+}
+
+extract_dependencies(@$noweb);
+
+foreach(@$cpp) {
+    push @cpp_dependencies, $_ if !$seen_cpp{$_}++;
 }
 
 foreach(@cpp_dependencies) {

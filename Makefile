@@ -12,7 +12,7 @@ pdf: $(ORG_SOURCES:%=%.pdf)
 
 # TODO: Define a filter list to make sure all filters are generated.
 filters: pandoc.org
-	./script/bootstrap-filters.pl
+	./include.pl $< ':tangle'
 
 # This target gathers all the targets that are supposed to be useful from the outside.
 LitLib: filters
