@@ -12,11 +12,11 @@ The following code block will export a =org= code block to a prettified json exp
 It's the first tool to reach for when trying to manipulate pandoc's output.
 
 #+name: pandoc-json
-#+begin_src bash :var what=""
-./include.pl pandoc.org ":noweb $what" | pandoc --standalone --from org --to json | json_pp
+#+begin_src bash :var what="" pandoc_args=""
+./include.pl pandoc.org ":noweb $what" | pandoc --standalone --from org --to json $pandoc_args | json_pp
 #+end_src
 
-This other code block will transform org document to org documents, with additional arguments transmitted.
+This other code block will transform org document to org documents.
 It's more useful than it looks at first glance, because it can be used to apply Lua filters to transform pandoc's representation.
 
 #+name: pandoc-org
