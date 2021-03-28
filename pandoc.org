@@ -5,6 +5,8 @@
 
 This document is about altering the structure of generated documents with pandoc filters and by doing that, adding features that will enhance the quality of literate documents.
 
+The later sections are dedicated to the implementation of the filters, except for the last one, where the various lua functions used throughout this document are defined.
+
 ** Noweb tools
 
 *** Pandoc output exploration
@@ -36,65 +38,11 @@ For example, a call to =pandoc-org= will look like =#+call: pandoc-org("example"
 ./include.pl pandoc.org ":noweb $noweb"
 #+end_src
 
-* Lua utils
+** Resources
 
-** String manipulation
+The most important resource I've found is pandoc's Lua filters documentation at https://pandoc.org/lua-filters.
+In particular, the section =Lua type reference= (https://pandoc.org/lua-filters#lua-type-reference) details the caracteristics of pandoc's blocks.
 
-*** Search unescaped characters
-
-The following function returns the position of the first unescaped character in a given substring.
-If the unescaped character is not found, the length of the string (aka the position of the last character) is returned.
-
-#+name: next_unescaped
-#+begin_src lua :eval never
-function next_unescaped(str, byte, position)
-   backslash = string.byte('\\')
-   was_backslash = str:byte(position) == backslash
-
-   while position < #str do
-      if not was_backslash then
-         if str:byte(position) == byte then
-            return position
-         end
-         was_backslash = str:byte(position) == backslash
-      else
-         was_backslash = false
-      end
-      position = position + 1
-   end
-   return position
-end
-#+end_src
-
-Below is a function illustrating its intended usage, extracting quoted substrings.
-#+name: find_endquote
-#+begin_src lua
-function find_endquote(str, position)
-   return next_unescaped(str, string.byte('"'), position)
-end
-#+end_src
-#+depends:find_endquote :noweb next_unescaped
-
-Usage example:
-#+begin_src lua
-<<include("find_endquote")>>
-
-function test_find_endquote(str)
-   until_endquote = str:sub(1, find_endquote(str, 2))
-   print('>', '`' .. until_endquote .. '`')
-end
-
-test_find_endquote('There is no endquote.')
-test_find_endquote('There is an endquote", this should not appear.')
-test_find_endquote('"Mind the \\" backslashes".')
-#+end_src
-
-#+RESULTS:
-#+begin_src text :minipage
->	`There is no endquote.`
->	`There is an endquote"`
->	`"Mind the \" backslashes"`
-#+end_src
 
 * Minipage generation
 
@@ -274,3 +222,67 @@ Exporting an org document to another org document seems to strip off all metadat
 
 For further testing, generating the pdf for this document (with =make pandoc.pdf=) should suffice.
 Currently, the first pretty-printed pandoc json output is too big to fit directly on its initial page, so =minipage= moves it to the next page.
+
+* Lua support library
+
+In this section are gathered some functions made to help me write pandoc filters.
+Also included here and there are some notes about how Lua works.
+
+** String manipulation
+
+*** Search unescaped characters
+
+The following function returns the position of the first unescaped character in a given substring.
+If the unescaped character is not found, the length of the string (aka the position of the last character) is returned.
+
+#+name: next_unescaped
+#+begin_src lua :eval never
+function next_unescaped(str, byte, position)
+   backslash = string.byte('\\')
+   was_backslash = str:byte(position) == backslash
+
+   while position < #str do
+      if not was_backslash then
+         if str:byte(position) == byte then
+            return position
+         end
+         was_backslash = str:byte(position) == backslash
+      else
+         was_backslash = false
+      end
+      position = position + 1
+   end
+   return position
+end
+#+end_src
+
+Below is a function illustrating its intended usage, extracting quoted substrings.
+#+name: find_endquote
+#+begin_src lua
+function find_endquote(str, position)
+   return next_unescaped(str, string.byte('"'), position)
+end
+#+end_src
+#+depends:find_endquote :noweb next_unescaped
+
+Usage example:
+#+begin_src lua
+<<include("find_endquote")>>
+
+function test_find_endquote(str)
+   until_endquote = str:sub(1, find_endquote(str, 2))
+   print('>', '`' .. until_endquote .. '`')
+end
+
+test_find_endquote('There is no endquote.')
+test_find_endquote('There is an endquote", this should not appear.')
+test_find_endquote('"Mind the \\" backslashes".')
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+>	`There is no endquote.`
+>	`There is an endquote"`
+>	`"Mind the \" backslashes"`
+#+end_src
+
