@@ -157,8 +157,8 @@ lines_and_blocks();
 ###########################
 # Dependencies resolution #
 ###########################
-my @cpp_;
-my @noweb_;
+my @cpp_dependencies;
+my @noweb_dependencies;
 my %seen_noweb;
 my %seen_cpp;
 sub extract_dependencies {
@@ -168,7 +168,7 @@ sub extract_dependencies {
             # I'm not sure why this script used to stop when no dependencies were declared.
             # stop("No dependencies declared for `$name`.") if !defined $deps;
             foreach(@{$deps->{cpp}}) {
-                push @cpp_, $_ if !$seen_cpp{$_}++;
+                push @cpp_dependencies, $_ if !$seen_cpp{$_}++;
             }
 
             # Code blocks must be included *after* their dependencies, but to avoid double inclusions,
@@ -177,14 +177,14 @@ sub extract_dependencies {
                 foreach(@{$reffed{$name}}) { $seen_noweb{$_}++; }
             }
             extract_dependencies(@{$deps->{noweb}}) if defined $deps->{noweb};
-            push @noweb_, $name;
+            push @noweb_dependencies, $name;
         }
     }
 }
 
 extract_dependencies(@$noweb);
 foreach(@$cpp) {
-    push @cpp_, $_ if !$seen_cpp{$_}++;
+    push @cpp_dependencies, $_ if !$seen_cpp{$_}++;
 }
 
 ########################
@@ -250,9 +250,9 @@ sub print_codeblock {
     print_codeblock_rec($name, '', 0);
 }
 
-foreach(@cpp_) {
+foreach(@cpp_dependencies) {
     say "#include <$_>";
 }
-foreach(@noweb_) {
+foreach(@noweb_dependencies) {
     print_codeblock($_);
 }
