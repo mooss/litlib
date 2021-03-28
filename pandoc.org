@@ -40,20 +40,20 @@ For example, a call to =pandoc-org= will look like =#+call: pandoc-org("example"
 
 ** String manipulation
 
-*** Character searching
+*** Search unescaped characters
 
 The following function returns the position of the first unescaped character in a given substring.
 If the unescaped character is not found, the length of the string (aka the position of the last character) is returned.
 
 #+name: next_unescaped
 #+begin_src lua :eval never
-function next_unescaped(str, char, position)
-   target = string.byte(char)
+function next_unescaped(str, byte, position)
    backslash = string.byte('\\')
    was_backslash = str:byte(position) == backslash
+
    while position < #str do
       if not was_backslash then
-         if str:byte(position) == target then
+         if str:byte(position) == byte then
             return position
          end
          was_backslash = str:byte(position) == backslash
@@ -67,26 +67,26 @@ end
 #+end_src
 
 Below is a function illustrating its intended usage, extracting quoted substrings.
-#+name: next_endquote
+#+name: find_endquote
 #+begin_src lua
-function next_endquote(str, position)
-   return next_unescaped(str, '"', position)
+function find_endquote(str, position)
+   return next_unescaped(str, string.byte('"'), position)
 end
 #+end_src
-#+depends:next_endquote :noweb next_unescaped
+#+depends:find_endquote :noweb next_unescaped
 
 Usage example:
 #+begin_src lua
-<<include("next_endquote")>>
+<<include("find_endquote")>>
 
-function test_next_endquote(str)
-   until_endquote = str:sub(1, next_endquote(str, 2))
+function test_find_endquote(str)
+   until_endquote = str:sub(1, find_endquote(str, 2))
    print('>', '`' .. until_endquote .. '`')
 end
 
-test_next_endquote('There is no endquote.')
-test_next_endquote('There is an endquote", this should not appear.')
-test_next_endquote('"Mind the \\" backslashes".')
+test_find_endquote('There is no endquote.')
+test_find_endquote('There is an endquote", this should not appear.')
+test_find_endquote('"Mind the \\" backslashes".')
 #+end_src
 
 #+RESULTS:
