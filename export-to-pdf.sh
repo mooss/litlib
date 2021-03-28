@@ -32,3 +32,4 @@ process_source | pandoc --standalone\
                         --citeproc\
                         --variable lang:en\
                         --lua-filter "$where/filters/minipage.lua"\
+                        --lua-filter "$where/filters/noweb-call.lua"\
