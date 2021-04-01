@@ -2,14 +2,17 @@
 
 # This poorly put together script parses a file (supposedly a org-mode file),
 # extracts the dependencies defined in it, attempts to match them with the arguments
-# given to it ($cpp and $noweb) and prints out the resulting C++ code (or the first
+# given to it (:cpp and :noweb) and prints out the resulting C++ code (or the first
 # error that occured).
+
+# An "include as C string" feature (:c-string) and a tangle (:tangle) feature have
+# been hastily retrofitted in this script, making it look more and more like the
+# creature of Frankenstein.
 
 # There are certainly a lot of unknown caveats.
 # One I do know for sure is that =noweb-ref= in property drawers are not supported.
 
-# For an example about how this is supposed to be used, look at the include code
-# block in interprete.org, along with its various invocations.
+# For an example about how this is supposed to be used, look at README.org.
 
 ###########
 # Imports #
