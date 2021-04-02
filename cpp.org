@@ -471,7 +471,7 @@ This very handy macro can be used to both log and then call a function:
 #define LOG_AND_CALL(function, ...) log_call(#function, __VA_ARGS__); function(__VA_ARGS__);
 #+end_src
 
-Usage example:
+Usage:
 #+begin_src cpp :eval no-export :exports both
 <<include(":noweb log_call")>>
 
@@ -513,7 +513,7 @@ This template is not compatible with C arrays.
 It would perhaps be better, cleaner and compatible with C arrays to use =std::span= rather than a templated function.
 I don't know the implications but I might consider it later.
 
-Usage example:
+Usage:
 #+begin_src cpp :eval no-export :exports both
 <<include(":noweb sum print-function :cpp vector array span")>>
 

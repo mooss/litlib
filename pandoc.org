@@ -518,7 +518,7 @@ function printtbl(tbl)
 end
 #+end_src
 
-Usage example:
+Usage:
 #+begin_src lua
 <<include("printtbl")>>
 printtbl({four=4, eight=8, fifteen=15, sixteen=16, twenty_three=23, forty_two=42})
@@ -551,7 +551,7 @@ function printarr(arr)
 end
 #+end_src
 
-Usage example:
+Usage:
 #+begin_src lua
 <<include("printarr")>>
 printarr({4, 8, 15, 16, 23, 42})
@@ -647,7 +647,7 @@ end
 #+end_src
 #+depends:find_endquote :noweb next_unescaped
 
-Usage example:
+Usage:
 #+begin_src lua
 <<include("find_endquote")>>
 
