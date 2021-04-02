@@ -223,6 +223,52 @@ double -> 8 bytes
 #+end_src
 
 
+** Container redirection
+
+This =std::ostream= operator overload should be enough to print most array-like types:
+#+name: <<span
+#+begin_src cpp
+template<class T>
+std::ostream& operator<<(std::ostream& os, const std::span<T> container) {
+    auto it = container.begin();
+    os << "[";
+    if(container.size() > 0) {
+        os << *it;
+        for(++it; it != container.end(); ++it)
+            os << ", " << *it;
+    }
+    os << "]";
+    return os;
+}
+#+end_src
+#+depends:<<span :cpp span iostream
+
+For reasons beyond my C++ knowledge, using =const std::span<const T>= instead of ==const std::span<T>== results in a compilation error in some cases.
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb <<span :cpp iostream vector span")>>
+int main() {
+    int lost_carray[] {4, 8, 15, 16, 23, 42};
+    std::vector<int> lost_vector{4, 8, 15, 16, 23, 42};
+    std::cout << lost_carray << "\n";
+    std::cout << std::span(lost_carray, 6) << "\n";
+    std::cout << std::span(lost_vector) << "\n";
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+0x7fff98b7fec0
+[4, 8, 15, 16, 23, 42]
+[4, 8, 15, 16, 23, 42]
+#+end_src
+
+Trying to directly print the array only prints the address of its first element, as should be expected.
+To really print the array, it must be wrapped explicitely in =std::span=.
+I'll probably write shortcuts for =std::vector= and =std::array= when I need them.
+
+
 ** Print function
 
 With variadic template and a bit of constructor abuse, it's possible to make a python-style print function accepting any number of arguments, separating them with a space and printing a newline at the end.
