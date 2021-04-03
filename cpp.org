@@ -13,6 +13,118 @@ Mandatory include block to be able to execute examples:
 #+end_src
 
 
+* Code generation
+:PROPERTIES:
+:header-args:
+:END:
+
+The class =Pycgen= (Python C++ generator) uses the concept of context managers to help with the task of generating C++ code in python.
+#+name: Pycgen
+#+begin_src python
+class Pycgen:
+    def __init__(self, indent_str='    ', level=0):
+        self.indent_str = indent_str
+        self.level = level
+        self.close = []
+
+    def __enter__(self):
+        self.level += 1
+        if len(self.close) < self.level:
+            self.close.append('')
+
+    def __exit__(self, ex_type, ex_value, traceback):
+        self.level -= 1
+        self.indent(self.close.pop())
+
+    def __call__(self, *lines):
+        for line in lines:
+            self.indent(line)
+
+    def indent(self, line):
+        print(self.indent_str * self.level, end='')
+        print(line)
+
+    def par(self, line, open='{', close='}'):
+        self(line + ' ' + open)
+        self.close.append(close)
+        return self
+
+    def struct(self, name):
+        return self.par('struct ' + name, close='};')
+#+end_src
+
+In a similar vein, =Pyogen= can generate org-mode code blocks, with support for LitLib =#+depends= syntax.
+#+name: Pyogen
+#+begin_src python
+class Pyogen:
+    def __init__(self, what, name=None, depends=None):
+        if depends is not None: assert name is not None
+        what = what.split(' ', maxsplit=1)
+        self.first = what[0]
+        if len(what) == 2:
+            self.rest = ' ' + what[1]
+        else:
+            self.rest = ''
+        self.name = name
+        self.depends = depends
+
+    def __enter__(self):
+        if self.name is not None:
+            print('#+name:', self.name)
+        print('#+begin_' + self.first + self.rest)
+
+    def __exit__(self, ex_type, ex_value, traceback):
+        print('#+end_' + self.first)
+        if self.depends is not None:
+            print('#+depends:' + self.name + ' ' + self.depends)
+#+end_src
+
+Here is the hello world of =Pyogen= and =Pycgen=:
+#+begin_src python :noweb no-export :results output :exports both
+<<include(":noweb Pyogen Pycgen")>>
+cpp = Pycgen()
+with Pyogen('src cpp', name='Pyogen-hw', depends=':cpp iostream'):
+    with cpp.par('void hello_world()'):
+        cpp('std::cout << "Hello, world!\\n";')
+#+end_src
+
+#+RESULTS:
+:results:
+#+name: Pyogen-hw
+#+begin_src cpp
+void hello_world() {
+    std::cout << "Hello, world!\n";
+}
+#+end_src
+#+depends:Pyogen-hw :cpp iostream
+:end:
+
+This generated code can be used elsewhere in the document, like so:
+#+begin_src cpp :eval no-export :wrap "src text" :exports both
+<<include(":noweb Pyogen-hw")>>
+int main() {
+    hello_world();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+Hello, world!
+#+end_src
+
+This so-called code generation is more of an amusement that a serious endeavour, the situations where it is practical are few and far between, but it can serve.
+
+Note that for the generated code to render well within Emacs, it must be placed in a raw drawer.
+The =:wrap= noweb argument should therefore be disabled, which apparently cannot be done at the code block level if it was enabled at the document level.
+If that is the case, the only thing to do is to disable it at the section level, by overwriting the property drawer just below the section header like so:
+#+begin_src org
+,*** Some section
+:PROPERTIES:
+:header-args:
+:END:
+#+end_src
+
+
 * Executable utilities
 
 This section regroups code blocks that can be executed from other org-mode files, using a syntax like this:
