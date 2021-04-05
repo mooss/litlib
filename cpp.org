@@ -691,3 +691,156 @@ Sum of lost numbers with a std::vector: 108
 Same thing with a std::array: 108
 Same thing with a std::span: 108
 #+end_src
+
+
+* Cool tricks (don't try this at home)
+
+This section is dedicated to weird C++ voltige.
+It might be dangerous, useless or plain stupid but it is (subjectively) always interesting and can raise new way to abuse the language.
+
+** Mandatory keyword arguments
+
+Designated initialisers in C++20 enable a syntax reminiscent to Python keyword arguments, although more verbose and limited.
+A problem is that there is, to my knowledge, no built-in way to specify that a keyword argument is mandatory.
+
+Let's use the example of the following =user= class:
+#+name: example-mandatory-user
+#+begin_src cpp
+class user {
+  public:
+    struct keyword_arguments {
+        std::string group = "others";
+        std::string name;
+        unsigned long id;
+    };
+    user(keyword_arguments&& kwargs):
+        group_(std::move(kwargs.group)),
+        name_(std::move(kwargs.name)),
+        id_(kwargs.id)
+    {
+        print{"group:", group_};
+        print{"name:", name_};
+        print{"id:", id_};
+    }
+
+  private:
+    std::string group_, name_;
+    unsigned long id_;
+};
+#+end_src
+#+depends:example-mandatory-user :noweb print-function :cpp string
+
+In the following executable, since nothing has been defined for =name= and =id=, the default value for =string= and =unsigned int= are used instead.
+This code is perfectly valid, it compiles and executes without problem.
+#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both :minipage
+<<include(":noweb example-mandatory-user")>>
+
+int main() {
+    user richard({});
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+group: others
+name: 
+id: 0
+#+end_src
+
+To force an error when =name= and =id= are not defined, the =mandatory= template can be used.
+#+name: mandatory
+#+begin_src cpp :minipage
+template<typename T>
+class mandatory {
+  public:
+    template<typename... Args>
+    mandatory(Args&&... args): value_(std::forward<Args>(args)...)
+    {}
+    mandatory()=delete;
+
+    const T& operator*() const {return value_;}
+    T& operator*() {return value_;}
+
+  private:
+    T value_;
+};
+#+end_src
+
+Some remarks about =mandatory=:
+ - The trick is that since the default constructor is deleted, fields wrapped in =mandatory= cannot be silently given a default value.
+ - The variadic-template-forwarding constructor gives some flexibility to the way arguments can be assigned.
+   In particular without it =std::string= assignments like ={.name = "ricardo"}= fail silently because, I assume, C++ then considers =.name= to be a =char *=.
+ - The =*= operator must be used to extract the value since I did not managed to make a working =T= conversion operator.
+   I assume move operations performed on the references returned by this operator will work as expected but I'm way out of my knowledge zone.
+\\
+
+Beyond declaring =name= and =id= as mandatory fields, this is not fully transparent as some adaptation to the =user= class is required, in the form of putting an asterisk in front of the mandatory arguments when they are used:
+#+name: example-mandatory-user-fixed
+#+begin_src cpp
+class user {
+  public:
+    struct keyword_arguments {
+        std::string group = "others";
+        mandatory<std::string> name;
+        mandatory<unsigned long> id;
+    };
+    user(keyword_arguments&& kwargs):
+        group_(std::move(kwargs.group)),
+        name_(std::move(*kwargs.name)),
+        id_(*kwargs.id)
+    {
+        print{"group:", group_};
+        print{"name:", name_};
+        print{"id:", id_};
+    }
+
+  private:
+    std::string group_, name_;
+    unsigned long id_;
+};
+#+end_src
+#+depends:example-mandatory-user-fixed :noweb mandatory print-function :cpp string
+
+Now the following code does not compile:
+#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :minipage
+<<include(":noweb example-mandatory-user-fixed")>>
+
+int main() {
+    user richard({});
+}
+#+end_src
+
+I am instead greeted by the following error messages:
+#+begin_src default
+/tmp/babel-QfQ93l/C-src-wPBlHJ.cpp: In function ‘int main()’:
+/tmp/babel-QfQ93l/C-src-wPBlHJ.cpp:104:20: error: use of deleted function ‘mandatory<T>::mandatory() [with T = std::__cxx11::basic_string<char>]’
+  104 |     user richard({});
+      |                    ^
+/tmp/babel-QfQ93l/C-src-wPBlHJ.cpp:16:5: note: declared here
+   16 |     mandatory()=delete;
+      |     ^~~~~~~~~
+/tmp/babel-QfQ93l/C-src-wPBlHJ.cpp:104:20: error: use of deleted function ‘mandatory<T>::mandatory() [with T = long unsigned int]’
+  104 |     user richard({});
+      |                    ^
+/tmp/babel-QfQ93l/C-src-wPBlHJ.cpp:16:5: note: declared here
+   16 |     mandatory()=delete;
+      |     ^~~~~~~~~
+#+end_src
+Which are surprisingly appropriate, I am pleasantly surprised.
+
+If only one mandatory argument is supplied, a compilation error is also triggered for the missing field.
+On the other hand, the following code works as expected:
+#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both :minipage
+<<include(":noweb example-mandatory-user-fixed")>>
+
+int main() {
+    user richard({.name = "ricardo", .id = 4815162342});
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+group: others
+name: ricardo
+id: 4815162342
+#+end_src
