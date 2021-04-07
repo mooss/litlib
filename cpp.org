@@ -254,7 +254,6 @@ vertices()=delete;
 
 * Printing
 
-
 ** Type name to string
 From https://stackoverflow.com/a/56766138.
 
@@ -649,11 +648,16 @@ hello, universe!
 #+end_src
 
 
-* Numerical operations
+* Various utilities
+
+This section is dedicated to utilities without overarching themes.
 
 ** Sum of a container
 
-I didn't like the idea of using =std::accumulate= with a begin iterator, a end iterator and a mandatory neutral element so I made the following =sum= template for a more Python-like experience.
+I didn't like the idea of using =std::accumulate= with a begin iterator, a end iterator and a mandatory neutral element, so I made the =sum= template for a more Python-like experience.
+
+I also didn't like the fact that using =std::accumulate= specifically for this it adds a dependency.
+Limiting dependencies is crucial to LitLib's developpement style since everything needs to be recompiled everytime.
 
 #+name: sum
 #+begin_src cpp
@@ -664,10 +668,6 @@ typename Container::value_type sum(const Container& source, typename Container::
     return neutral;
 }
 #+end_src
-
-This template is not compatible with C arrays.
-It would perhaps be better, cleaner and compatible with C arrays to use =std::span= rather than a templated function.
-I don't know the implications but I might consider it later.
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
@@ -688,6 +688,21 @@ int main() {
 Sum of lost numbers with a std::vector: 108
 Same thing with a std::array: 108
 Same thing with a std::span: 108
+#+end_src
+\\
+
+This template does not work directly with C arrays but wrapping them in =std::span= makes it work:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb sum print-function :cpp span")>>
+int main() {
+    float lost[]{4, 8, 15, 16, 23, 42};
+    print{"Sum of lost numbers with a C array, via std::span:", sum(std::span(lost))};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+Sum of lost numbers with a C array, via std::span: 108
 #+end_src
 
 
