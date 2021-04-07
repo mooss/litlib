@@ -657,13 +657,11 @@ I didn't like the idea of using =std::accumulate= with a begin iterator, a end i
 
 #+name: sum
 #+begin_src cpp
-namespace lit {
 template<class Container>
 typename Container::value_type sum(const Container& source, typename Container::value_type neutral=0) {
     for(const auto& el: source)
         neutral += el;
     return neutral;
-}
 }
 #+end_src
 
@@ -679,9 +677,9 @@ int main() {
     std::vector<int> lost_v{4, 8, 15, 16, 23, 42};
     std::array<int, 6> lost_a{4, 8, 15, 16, 23, 42};
     std::span<int> lost_s(lost_v);
-    print{"Sum of lost numbers with a std::vector:", lit::sum(lost_v)};
-    print{"Same thing with a std::array:", lit::sum(lost_a)};
-    print{"Same thing with a std::span:", lit::sum(lost_s)};
+    print{"Sum of lost numbers with a std::vector:", sum(lost_v)};
+    print{"Same thing with a std::array:", sum(lost_a)};
+    print{"Same thing with a std::span:", sum(lost_s)};
 }
 #+end_src
 
