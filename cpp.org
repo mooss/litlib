@@ -1,5 +1,6 @@
-#+PROPERTY: header-args:cpp :eval never :main no :flags -Wall -std=c++20 :noweb no-export
-#+PROPERTY: header-args :exports both :wrap "src text"
+#+property: header-args:cpp :eval never :main no :flags -Wall -std=c++20 :noweb no-export
+#+property: header-args :exports both :wrap "src text"
+#+options: ^:nil
 
 #+title: LitLib C++
 #+subtitle: A collection of C++20 building blocks for literate programming
