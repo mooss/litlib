@@ -337,11 +337,13 @@ double -> 8 bytes
 
 ** Container redirection
 
+*** Span
+
 This =std::ostream= operator overload should be enough to print most array-like types:
 #+name: <<span
 #+begin_src cpp
-template<class T>
-std::ostream& operator<<(std::ostream& os, const std::span<T> container) {
+template<class T, std::size_t Extent>
+std::ostream& operator<<(std::ostream& os, const std::span<T, Extent> container) {
     auto it = container.begin();
     os << "[";
     if(container.size() > 0) {
@@ -378,7 +380,46 @@ int main() {
 
 Trying to directly print the array only prints the address of its first element, as should be expected.
 To really print the array, it must be wrapped explicitely in =std::span=.
-I'll probably write shortcuts for =std::vector= and =std::array= when I need them.
+
+*** Array and vector
+
+To avoid having to manually construct a =std::span= to print a vector or an array, shortcuts are baked into the blocks =<<vector= and =<<array=.
+
+#+name: <<vector
+#+begin_src cpp
+template<class T, class Allocator>
+std::ostream& operator<<(std::ostream& os, const std::vector<T, Allocator>& container) {
+    return os << std::span(container);
+}
+#+end_src
+#+depends:<<vector :noweb <<span :cpp vector span
+
+#+name: <<array
+#+begin_src cpp
+template<class T, std::size_t N>
+std::ostream& operator<<(std::ostream& os, const std::array<T, N>& container) {
+    return os << std::span(container);
+}
+#+end_src
+#+depends:<<array :noweb <<span :cpp array span
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb <<vector <<array :cpp iostream")>>
+
+int main() {
+    std::vector<int> lost_vector{4, 8, 15, 16, 23, 42};
+    std::array<int, 6> lost_array{4, 8, 15, 16, 23, 42};
+    std::cout << "vector: " << lost_vector << "\n";
+    std::cout << "array: " << lost_array << "\n";
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+vector: [4, 8, 15, 16, 23, 42]
+array: [4, 8, 15, 16, 23, 42]
+#+end_src
 
 
 ** Print function
