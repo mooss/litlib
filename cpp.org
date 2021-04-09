@@ -747,6 +747,84 @@ int main() {
 Sum of lost numbers with a C array, via std::span: 108
 #+end_src
 
+** Finaliser
+
+=finaliser= is a class that can be returned from a function and trigger something (a deleter) when the object is destroyed, thus tying the action to the scope of the =finaliser=.
+It is an alternative version of the unimplemented =anchor= class discussed in a later section.
+#+name: finaliser
+#+begin_src cpp
+template<typename Callable, typename State=int>
+class finaliser {
+  public:
+    finaliser(Callable deleter):
+        deleter_(std::move(deleter))
+    {}
+
+    finaliser(State initial_state, Callable deleter):
+        deleter_(std::move(deleter)),
+        state_(std::move(initial_state))
+    {}
+
+    ~finaliser() {
+        deleter_(state_);
+    }
+
+    finaliser(const finaliser&)=delete;
+    finaliser& operator=(const finaliser&)=delete;
+    finaliser(finaliser&&)=delete;
+    finaliser& operator=(finaliser&&)=delete;
+    finaliser()=delete;
+
+  protected:
+    State state_;
+    Callable deleter_;
+};
+#+end_src
+Some notes on =finaliser=:
+ - A protected state is baked in to allow some customisation of the deleter's behaviour by extending =finaliser=.
+ - I'm constructing with =std::move= because I assume that it doesn't hurt in the cases where it's useless (with =int= in particular) and that it can be useful should someone need to store a huge state in here.
+ - Every special member function under the sun is deleted because a given deleter should only be called once.
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb finaliser print-function <<vector :cpp vector")>>
+
+[[nodiscard("Will cleanup immediately.")]]
+auto cleanup_later(std::vector<int>& numbers) {
+    return finaliser([&](int){
+        print{"Will clean", numbers};
+        numbers.clear();
+        print{"Die alone", numbers};
+    });
+}
+
+int main() {
+    print{"Live together."};
+    std::vector<int> a_scenario_with_loose_ends{4, 8, 15, 16, 23};
+    auto finale = cleanup_later(a_scenario_with_loose_ends);
+    print{"Adding 42."};
+    a_scenario_with_loose_ends.push_back(42);
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+Live together.
+Adding 42.
+Will clean [4, 8, 15, 16, 23, 42]
+Die alone []
+#+end_src
+
+Note that should the return value be ignored, the side effect is enacted immediately, resulting in the following output:
+#+begin_src text
+Live together.
+Will clean [4, 8, 15, 16, 23]
+Die alone []
+Adding 42.
+#+end_src
+
+This can be problematic but I have no solution, only a slight mitigation consisting in putting the =nodiscard= attribute to generate a compiler warning should a return value be ignored.
+
 
 * Cool tricks (don't try this at home)
 
