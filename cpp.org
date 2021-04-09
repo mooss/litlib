@@ -303,27 +303,27 @@ double
 #+end_src
 
 
-** Type printer (=print_infos=)
+** Type printer (=print_info=)
 
-#+name: print_infos
+#+name: print_info
 #+begin_src cpp :noweb-ref litlib
 template<typename T>
-void print_infos() {
+void print_info() {
     std::cout << type_str<T>() << " -> " << sizeof(T) << " bytes\n";
 }
 #+end_src
-#+depends:print_infos :cpp iostream :noweb type_str
+#+depends:print_info :cpp iostream :noweb type_str
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb print_infos")>>
+<<include(":noweb print_info")>>
 using namespace std;
 
 int main(){
-    print_infos<int>();
+    print_info<int>();
     const long ft = 42;
-    print_infos<decltype(ft)>();
-    print_infos<decltype(12.3)>();
+    print_info<decltype(ft)>();
+    print_info<decltype(12.3)>();
 }
 #+end_src
 
