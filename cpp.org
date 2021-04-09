@@ -860,14 +860,19 @@ id: 4815162342
 #+end_src
 
 
-** Anchor
+** Anchor (fun with(out) RVO)
 
-The =anchor= class is a pretty weird usage of C++.
-The goal is to have a function returning an object that will perform an action on destruction but that action depends on whether the object was ignored.
+The initial goal of the =anchor= is to have a function returning an =anchor= object that will perform an action on destruction but that action depends on whether the object was ignored.
 Metaphorically, the function is a boat throwing an anchor that is either lost (the return value is ignored) or touches the seafloor (the return value is assigned).
 But really the anchor terminology was chosen because it's about anchoring something in another scope.
 
-A problem with this idea is that in order to known when it has been assigned, its implementation relies on side effect enacted by copy constructors.
+The paragraph above talked about an initial goal because I didn't manage to make it work.
+To be precise, I didn't manage to know whether the =anchor= was ignored or not.
+Therefore =anchor= is not implemented but it is still explored in the rest of this section.
+
+*** Bypassing RVO
+
+A problem with =anchor= is that in order to known whether it has been assigned, it must rely on side effect enacted by copy constructors.
 A naive implementation will not work because return value optimisation (RVO) will bypass the copy operation.
 Thus a mechanism must be put in place to bypass RVO itself.
 
@@ -911,17 +916,17 @@ Note that without =unvolatile=, the previous code block fails with the following
 error: no matching function for call to ‘std::__cxx11::basic_string<char>::basic_string(volatile string&)’
 #+end_src
 
-*** Illustration
+*** Observing RVO
 
-Before implementing I want to illustrate how RVO is bypassed with =volatile=.
-To this end, below is a struct that updates its state everytime a relevant event occurs and also prints said event.
+This section will show how RVO can be bypassed with =volatile= but also why trying to check if a return value was ignored cannot be done this way.
+To fulfill this, the =talkative= struct updates its state everytime a relevant event occurs and also prints said event.
 
 #+name: talkative-example
 #+begin_src cpp
 struct talkative {
     talkative(const std::string& initial_state):
         state(initial_state)
-    {print{initial_state};}
+    {}
 
     talkative(const talkative& other):
         state(other.state)
@@ -934,6 +939,13 @@ struct talkative {
         unvolatile(other.state) = "Stolen volatile!";
     }
 
+    talkative(talkative&& other):
+        state(std::move(other.state))
+    {
+        process("move_c");
+        unvolatile(other.state) = "Stolen!";
+    }
+
     ~talkative() {
         print{"destroying:", state};
         // Just for sanity's sake.
@@ -941,7 +953,6 @@ struct talkative {
     }
 
     talkative& operator=(const talkative&)=delete;
-    talkative(talkative&&)=delete;
     talkative& operator=(talkative&&)=delete;
     talkative()=delete;
 
@@ -958,75 +969,102 @@ struct talkative {
 #+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both
 <<include(":noweb talkative-example print-function type_str :cpp string")>>
 
-talkative non_volatile_return(std::string const& initial) {
+int n = 1;
+void title(std::string const& name) {
+    print{std::string("\n") + std::to_string(n) + ".", "|||", name, "|||"};
+    ++n;
+}
+
+talkative return_plain(std::string const& initial) {
+    title(initial);
     talkative result(initial);
     return result;
 }
 
-talkative volatile_return(std::string const& initial) {
+talkative return_move(std::string const& initial) {
+    title(initial);
+    talkative result(initial);
+    return std::move(result);
+}
+
+talkative return_volatile(std::string const& initial) {
+    title(initial);
     volatile talkative result(initial);
     return result;
 }
 
 int main() {
-    print{"1. ||| Non volatile captured |||"};
-    auto x_nvr = non_volatile_return("Non volatile captured");
+    auto result_plain = return_plain("Plain captured");
+    auto result_move = return_move("Move captured");
+    auto result_volatile = return_volatile("Volatile captured");
 
-    print{"\n2. ||| Volatile captured |||"};
-    auto y_vr = volatile_return("Volatile captured");
+    return_plain("Plain ignored");
+    return_move("Move ignored");
+    return_volatile("Volatile ignored");
 
-    print{"\n3. ||| Volatile ignored |||"};
-    volatile_return("Volatile ignored");
-
-    print{"\n4. ||| Types |||"};
-    print{"Type of x_nvr:", type_str<decltype(x_nvr)>()};
-    print{"Type of non volatile in y_vr:", type_str<decltype(y_vr)>()};
+    title("Types");
+    print{"Type of result_plain:", type_str<decltype(result_plain)>()};
+    print{"Type of result_move:", type_str<decltype(result_move)>()};
+    print{"Type of result_volatile:", type_str<decltype(result_volatile)>()};
     volatile talkative explicitely_volatile("ignoreme");
-    print{"Type of explicitely volatile talkative:", type_str<decltype(explicitely_volatile)>()};
+    print{"Type of explicitely_volatile:", type_str<decltype(explicitely_volatile)>()};
 
-    print{"\n5. ||| End of scope |||"};
+    title("End of scope");
 }
 #+end_src
 
 #+RESULTS:
 #+begin_src text
-1. ||| Non volatile captured |||
-Non volatile captured
 
-2. ||| Volatile captured |||
-Volatile captured
+1. ||| Plain captured |||
+
+2. ||| Move captured |||
+move_c
+destroying: Stolen!
+
+3. ||| Volatile captured |||
 volatile-move_c
 destroying: Stolen volatile!
 
-3. ||| Volatile ignored |||
-Volatile ignored
+4. ||| Plain ignored |||
+destroying: Plain ignored
+
+5. ||| Move ignored |||
+move_c
+destroying: Stolen!
+destroying: Move ignored, move_c
+
+6. ||| Volatile ignored |||
 volatile-move_c
 destroying: Stolen volatile!
 destroying: Volatile ignored, volatile-move_c
 
-4. ||| Types |||
-Type of x_nvr: talkative
-Type of non volatile in y_vr: talkative
-ignoreme
-Type of explicitely volatile talkative: volatile talkative
+7. ||| Types |||
+Type of result_plain: talkative
+Type of result_move: talkative
+Type of result_volatile: talkative
+Type of explicitely_volatile: volatile talkative
 
-5. ||| End of scope |||
+8. ||| End of scope |||
 destroying: ignoreme
 destroying: Volatile captured, volatile-move_c
-destroying: Non volatile captured
+destroying: Move captured, move_c
+destroying: Plain captured
 #+end_src
 
 To summarise the output above:
- 1. The captured non volatile value inside =x= generates no side effect because of NRVO.
- 2. The captured volatile value is moved into =y= and the original object is destroyed.
- 3. The ignored volatile value is moved, uh, somewhere and both are destroyed.
- 4. =x= and =y= are not volatile.
-    This might explain what happens with the ignored volatile value.
-    Since the return type of =volatile_return= is not qualified with =volatile= and that the compiler is not supposed to optimise away volatile values, the volatile move constructor is called in order to match the specified return type.
- 5. The destructors are called at the end of the scope.
+ 1. Nothing happens, =result_plain= is constructed in place because of RVO.
+ 2. The result is moved into =result_move= via the move constructor and the original is destroyed.
+ 3. The result is moved into =result_volatile= via the volatile move constructor and the original is destroyed.
+ 4. The plain result is destroyed.
+ 5. The result is moved into a temporary and both are destroyed.
+ 6. The result is moved into a temporary and both are destroyed.
+ 7. All captured results are plain =talkative=.
+ 8. The destructors are called at the end of scope.
 
+This is not what I hoped because there is no way to know whether the variable was ignored.
+What I hoped was that returning a named volatile would not construct a plain object, unless the return was assigned to something.
 
-Interestingly, even though =talkative='s copy constructor is not used, it is still required in order to compile, probably because of the rules dictating when constructors are to be or not to be generated.
-
-*** TODO Implementation
-
+Some lessons learned:
+ - RVO can indeed be bypassed by returning a named volatile.
+ - It can apparently be bypassed in a similar way with =std::move= but with a compiler warning telling you not to do that.
