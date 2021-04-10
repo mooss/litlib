@@ -1006,6 +1006,154 @@ active
 As desired, the second cancellation does nothing.
 
 
+** Observable
+
+An observable corresponds to the observer pattern but implemented from the point of view of the observed object.
+The idea is that =observable= holds a value of type =Observed=, whose evolution can be tracked from the outside by registering a consumer of =Observed= with the method =observe=.
+
+The implementation is splitted across the next subsections and here is its outline:
+#+name: observable
+#+begin_src cpp :minipage
+template<typename Observed>
+class observable {
+  public:
+    using observer_storage = std::function<void(const Observed&)>;
+    <<observable/public>>
+
+  private:
+    Observed observed_;
+    inventory<observer_storage> observers_;
+    <<observable/private>>
+};
+#+end_src
+#+depends:observable :noweb subscription inventory :cpp functional
+
+*** Observation
+
+An observer's lifetime is handled via a =subscription=.
+Note that there is no handling of the case where the =observable= is destroyed before its =observer=.
+Doing this would probably crash the program right now.
+
+#+begin_src cpp :noweb-ref observable/public :minipage
+template<typename Observer>
+[[nodiscard("An ignored observer subscription will be destroyed before anything can be observed.")]]
+auto observe(Observer&& observer) {
+    using s = subscription_state;
+    auto handle = observers_.store(std::forward<Observer>(observer));
+    return subscription([this, handle](s state){
+        if(state == s::active || state == s::cancel)
+            observers_.remove(handle);
+    });
+}
+#+end_src
+
+=notify= can be used internally to call all the registered observers with the current observed value.
+#+begin_src cpp :noweb-ref observable/private :minipage
+void notify() {
+    for(auto observer: observers_)
+        observer(observed_);
+}
+#+end_src
+
+*** Lifecycle
+
+The assignment operators is where all the magic occurs since they allow the stored value to be updated as if it was of type =Observed= and then notifies the observers.
+Thus for example, an =obvervable<int>= can be updated as if it was actually =int= and trigger a notification to all observers.
+
+#+begin_src cpp :noweb-ref observable/public :minipage
+observable& operator=(Observed&& new_value) {
+    observed_ = std::forward<Observed>(new_value);
+    notify();
+    return *this;
+}
+
+observable& operator=(Observed new_value) {
+    observed_ = new_value;
+    notify();
+    return *this;
+}
+#+end_src
+
+The =Observed= constructor is the only one defined because there is no obvious semantic for moving around an =observable=.
+Therefore constructing the =observable= and updating its =Observed= value is the only valid semantic for now.
+
+#+begin_src cpp :noweb-ref observable/public :minipage
+observable(Observed&& initial):
+    observed_(std::forward<Observed>(initial))
+{}
+
+observable(const observable&)=delete;
+observable& operator=(const observable&)=delete;
+observable(observable&&)=delete;
+observable& operator=(observable&&)=delete;
+observable()=delete;
+#+end_src
+
+*** Usage
+
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb observable print-function print_info <<vector :cpp vector")>>
+
+void prefix_print(int x) {
+    print{x, "<-"};
+}
+
+void postfix_print(int x) {
+    print{"->", x};
+}
+
+void infix_print(int x) {
+    print{{.sep=""}}("|", x, "|");
+}
+
+int main() {
+    std::vector<int> lost = {4, 8, 15, 16, 23, 42};
+    observable<int> number(0);
+
+    // An easy mistake to make.
+    number.observe(prefix_print);
+    auto postfix_sub = number.observe(postfix_print);
+    auto infix_sub = number.observe(infix_print);
+
+    print{"||| Printing frenzy |||"};
+    for(auto el: lost)
+        number = el;
+
+    print{"\n||| Types information |||"};
+    print_info<decltype(infix_sub)>();
+    print_info<decltype(number)>();
+    print_info<decltype(number)::observer_storage>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+||| Printing frenzy |||
+-> 4
+|4|
+-> 8
+|8|
+-> 15
+|15|
+-> 16
+|16|
+-> 23
+|23|
+-> 42
+|42|
+
+||| Types information |||
+subscription<observable<Observed>::observe<void (&)(int)>::<lambda(s)> > -> 24 bytes
+observable<int> -> 32 bytes
+std::function<void(const int&)> -> 32 bytes
+#+end_src
+
+The biggest problem of =observable= is the fact that the caller can easily forget to store the subscription.
+A feature similar to =[[nodiscard]]= but that simply refuses to compile would be great to fix this.
+Alternatively, a scoped object could be passed to observe alongside the observer.
+This might actually be more convenient at the call site.
+
+
 * Cool tricks (don't try this at home)
 
 This section is dedicated to weird C++ voltige.
