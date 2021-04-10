@@ -827,6 +827,71 @@ Adding 42.
 
 This can be problematic but I have no solution, only the slight mitigation of using the =nodiscard= attribute to generate a compiler warning should a return value be ignored.
 
+For an example using the internal state, see =subscription= in the next section.
+
+
+** Subscription
+
+A =subscription= object provides a =cancel= method that will notify the side effect of this state change.
+Cancelling the subscription will also change the internal state to =already_cancelled=, to allow the side effect to make the difference between the destruction of an active subscription and that of a cancelled subscription.
+As should be expected, a subscription can only be cancelled once, additional cancelling will not trigger the side effect again.
+
+#+name: subscription
+#+begin_src cpp :minipage
+enum class subscription_state {active, cancel, already_cancelled};
+
+template<typename Callable>
+struct subscription: public finaliser<Callable, subscription_state> {
+    using state = subscription_state;
+    subscription(Callable side_effect):
+        finaliser<Callable, subscription_state>(state::active, std::move(side_effect))
+    {}
+
+    void cancel() {
+        if(this->state_ == state::active) {
+            this->side_effect_(state::cancel);
+            this->state_ = state::already_cancelled;
+        }
+    }
+};
+#+end_src
+#+depends:subscription :noweb finaliser
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb subscription print-function")>>
+
+auto verbose_subscription() {
+    return subscription([](auto state){
+        using s = subscription_state;
+        if(state == s::active)
+            print{"active"};
+        else if(state == s::cancel)
+            print{"cancel"};
+        else if(state == s::already_cancelled)
+            print{"already cancelled"};
+    });
+}
+
+int main() {
+    auto will_not_cancel = verbose_subscription();
+    auto will_cancel = verbose_subscription();
+    will_cancel.cancel();
+    will_cancel.cancel();
+    print{"End of scope."};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+cancel
+End of scope.
+already cancelled
+active
+#+end_src
+
+As desired, the second cancellation does nothing.
+
 
 * Cool tricks (don't try this at home)
 
