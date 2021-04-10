@@ -1057,18 +1057,13 @@ void notify() {
 
 *** Lifecycle
 
-The assignment operators is where all the magic occurs since they allow the stored value to be updated as if it was of type =Observed= and then notifies the observers.
+The assignment operator is where all the magic occurs since it allows the stored value to be updated as if it was of type =Observed= and then notifies the observers.
 Thus for example, an =obvervable<int>= can be updated as if it was actually =int= and trigger a notification to all observers.
 
 #+begin_src cpp :noweb-ref observable/public :minipage
-observable& operator=(Observed&& new_value) {
-    observed_ = std::forward<Observed>(new_value);
-    notify();
-    return *this;
-}
-
-observable& operator=(Observed new_value) {
-    observed_ = new_value;
+template<typename T>
+observable& operator=(T&& new_value) {
+    observed_ = std::forward<T>(new_value);
     notify();
     return *this;
 }
