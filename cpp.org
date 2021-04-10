@@ -1084,6 +1084,15 @@ observable& operator=(observable&&)=delete;
 observable()=delete;
 #+end_src
 
+*** Access
+
+Members of =Observed= can still be accessed via the =->= operator:
+#+begin_src cpp :noweb-ref observable/public :minipage
+const Observed* operator->() const {
+    return &observed_;
+}
+#+end_src
+
 *** Usage
 
 #+begin_src cpp :eval no-export :exports both
@@ -1100,6 +1109,11 @@ void postfix_print(int x) {
 void infix_print(int x) {
     print{{.sep=""}}("|", x, "|");
 }
+
+struct pair {
+    int first;
+    int second;
+};
 
 int main() {
     std::vector<int> lost = {4, 8, 15, 16, 23, 42};
@@ -1118,6 +1132,10 @@ int main() {
     print_info<decltype(infix_sub)>();
     print_info<decltype(number)>();
     print_info<decltype(number)::observer_storage>();
+
+    print{"\n||| Access |||"};
+    observable<pair> last({23, 42});
+    print{last->first, last->second};
 }
 #+end_src
 
@@ -1141,6 +1159,9 @@ int main() {
 subscription<observable<Observed>::observe<void (&)(int)>::<lambda(s)> > -> 24 bytes
 observable<int> -> 32 bytes
 std::function<void(const int&)> -> 32 bytes
+
+||| Access |||
+23 42
 #+end_src
 
 The biggest problem of =observable= is the fact that the caller can easily forget to store the subscription.
