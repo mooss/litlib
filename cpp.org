@@ -943,8 +943,10 @@ For an example using the internal state, see =subscription= in the next section.
 
 ** Subscription
 
-A =subscription= object provides a =cancel= method that will notify the side effect of this state change.
-Cancelling the subscription will also change the internal state to =already_cancelled=, to allow the side effect to make the difference between the destruction of an active subscription and that of a cancelled subscription.
+A =subscription= object is an extension of =finaliser= providing a method to =cancel= itself.
+The side effect is notified of this state change.
+Cancelling the subscription also changes the internal state to =already_cancelled=, to allow the side effect to make the difference between the destruction of an active subscription and that of an already cancelled subscription.
+
 As should be expected, a subscription can only be cancelled once, additional cancelling will not trigger the side effect again.
 
 #+name: subscription
