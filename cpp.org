@@ -337,7 +337,7 @@ double -> 8 bytes
 
 ** Container redirection
 
-This section defines =<<= operator overloads for ostream in order to easily print various containers.
+This section overload ostream's =<<= operator for some containers.
 
 *** Sequential containers
 
