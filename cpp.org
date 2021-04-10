@@ -337,16 +337,21 @@ double -> 8 bytes
 
 ** Container redirection
 
-*** Span
+This section defines =<<= operator overloads for ostream in order to easily print various containers.
 
-This =std::ostream= operator overload should be enough to print most array-like types:
-#+name: <<span
+*** Sequential containers
+
+The code below is an internal helper that prints a given container between square brackets.
+This format is a reasonable representation for a sequential container, similar to Python's behaviour.
+
+#+name: sequential_redirection
 #+begin_src cpp
-template<class T, std::size_t Extent>
-std::ostream& operator<<(std::ostream& os, const std::span<T, Extent> container) {
+namespace container_redirection {
+template<class Container>
+std::ostream& sequential(std::ostream& os, const Container& container) {
     auto it = container.begin();
     os << "[";
-    if(container.size() > 0) {
+    if(!container.empty()) {
         os << *it;
         for(++it; it != container.end(); ++it)
             os << ", " << *it;
@@ -354,72 +359,93 @@ std::ostream& operator<<(std::ostream& os, const std::span<T, Extent> container)
     os << "]";
     return os;
 }
-#+end_src
-#+depends:<<span :cpp span iostream
-
-For reasons beyond my C++ knowledge, using =const std::span<const T>= instead of ==const std::span<T>== results in a compilation error in some cases.
-
-Usage:
-#+begin_src cpp :eval no-export :exports both
-<<include(":noweb <<span :cpp iostream vector span")>>
-int main() {
-    int lost_carray[] {4, 8, 15, 16, 23, 42};
-    std::vector<int> lost_vector{4, 8, 15, 16, 23, 42};
-    std::cout << lost_carray << "\n";
-    std::cout << std::span(lost_carray, 6) << "\n";
-    std::cout << std::span(lost_vector) << "\n";
 }
 #+end_src
+#+depends:sequential_redirection :cpp ostream
 
-#+RESULTS:
-#+begin_src text
-0x7fff98b7fec0
-[4, 8, 15, 16, 23, 42]
-[4, 8, 15, 16, 23, 42]
+This helper is then used to quickly define =<<= overloads for some common sequential containers.
+
+#+name: <<forward_list
+#+begin_src cpp
+template<typename T, typename Allocator>
+std::ostream& operator<<(std::ostream& os, const std::forward_list<T, Allocator>& container) {
+    return container_redirection::sequential(os, container);
+}
 #+end_src
+#+depends:<<forward_list :noweb sequential_redirection :cpp ostream forward_list
 
-Trying to directly print the array only prints the address of its first element, as should be expected.
-To really print the array, it must be wrapped explicitely in =std::span=.
-
-*** Array and vector
-
-To avoid having to manually construct a =std::span= to print a vector or an array, shortcuts are baked into the blocks =<<vector= and =<<array=.
+#+name: <<span
+#+begin_src cpp
+template<typename T, std::size_t Extent>
+std::ostream& operator<<(std::ostream& os, const std::span<T, Extent>& container) {
+    return container_redirection::sequential(os, container);
+}
+#+end_src
+#+depends:<<span :noweb sequential_redirection :cpp ostream span
 
 #+name: <<vector
 #+begin_src cpp
 template<class T, class Allocator>
 std::ostream& operator<<(std::ostream& os, const std::vector<T, Allocator>& container) {
-    return os << std::span(container);
+    return container_redirection::sequential(os, container);
 }
 #+end_src
-#+depends:<<vector :noweb <<span :cpp vector span
+#+depends:<<vector :noweb sequential_redirection :cpp ostream vector
 
 #+name: <<array
 #+begin_src cpp
 template<class T, std::size_t N>
 std::ostream& operator<<(std::ostream& os, const std::array<T, N>& container) {
-    return os << std::span(container);
+    return container_redirection::sequential(os, container);
 }
 #+end_src
-#+depends:<<array :noweb <<span :cpp array span
+#+depends:<<array :noweb sequential_redirection :cpp ostream array
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb <<vector <<array :cpp iostream")>>
-
+<<include(":noweb <<forward_list <<span <<vector <<array print-function :cpp forward_list vector array span")>>
 int main() {
+    print{"1. ||| forward_list |||"};
+    std::forward_list<int> lost_list{4, 8, 15, 16, 23, 42};
+    print{"lost_list", lost_list};
+
+    print{"\n2. ||| vector |||"};
     std::vector<int> lost_vector{4, 8, 15, 16, 23, 42};
+    print{"lost_vector", lost_vector};
+
+    print{"\n3. ||| array |||"};
     std::array<int, 6> lost_array{4, 8, 15, 16, 23, 42};
-    std::cout << "vector: " << lost_vector << "\n";
-    std::cout << "array: " << lost_array << "\n";
+    print{"lost_array", lost_array};
+
+    print{"\n4. ||| span |||"};
+    int lost_carray[] {4, 8, 15, 16, 23, 42};
+    print{"lost_carray", lost_carray};
+    print{"span(lost_carray)", std::span(lost_carray, 6)};
+    print{"span(lost_vector)", std::span(lost_vector)};
+    print{"span(lost_array)", std::span(lost_array)};
 }
 #+end_src
 
 #+RESULTS:
 #+begin_src text
-vector: [4, 8, 15, 16, 23, 42]
-array: [4, 8, 15, 16, 23, 42]
+1. ||| forward_list |||
+lost_list [4, 8, 15, 16, 23, 42]
+
+2. ||| vector |||
+lost_vector [4, 8, 15, 16, 23, 42]
+
+3. ||| array |||
+lost_array [4, 8, 15, 16, 23, 42]
+
+4. ||| span |||
+lost_carray 0x7ffd94877080
+span(lost_carray) [4, 8, 15, 16, 23, 42]
+span(lost_vector) [4, 8, 15, 16, 23, 42]
+span(lost_array) [4, 8, 15, 16, 23, 42]
 #+end_src
+
+Trying to directly print a C-style array only prints the address of its first element, as should be expected.
+To really print the array, it must be wrapped explicitely in =std::span=.
 
 
 ** Print function
