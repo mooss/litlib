@@ -716,6 +716,91 @@ hello, universe!
 #+end_src
 
 
+
+* Data structures
+
+** Inventory
+
+An inventory is a very simple data structure with only two main operations:
+ 1. =store= a value, returning a handle.
+ 2. =remove= stored values using their handle.
+
+An inventory has the following constraints:
+ 1. Iteration on the elements is supported.
+ 2. Non hashable types (like =std::function=) are storable.
+ 3. Elements can be removed from anywhere without needing to reallocate them.
+
+This implementation is based on the doubly-linked lists from =std::list=.
+Given the constraints, it's certainly possible to implement something much more efficient, but that will be an exercise for another day.
+
+#+name: inventory
+#+begin_src cpp :minipage
+template<typename T>
+class inventory {
+  public:
+    using warehouse = std::list<T>;
+    using handle = warehouse::iterator;
+
+    template<typename... Args>
+    handle store(Args&&... args) {
+        return storage_.emplace(storage_.end(), std::forward<Args>(args)...);
+    }
+
+    void remove(handle h) {storage_.erase(h);}
+    std::size_t size() const {return storage_.size();}
+
+    handle begin() const {return storage_.begin();}
+    handle end() const {return storage_.end();}
+    handle begin() {return storage_.begin();}
+    handle end() {return storage_.end();}
+
+  private:
+    warehouse storage_;
+};
+#+end_src
+#+depends:inventory :cpp list
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb inventory print-function :cpp functional")>>
+
+void print_int(int x) {
+    print{"print_int", x};
+}
+
+void print_inc_int(int x) {
+    print{"print_inc_int", x + 1};
+}
+
+int main() {
+    using fun = std::function<void(int)>;
+
+    inventory<fun> funs;
+    auto int_handle = funs.store(print_int);
+    auto inc_int_handle = funs.store(print_inc_int);
+
+    for(const auto f: funs)
+        f(15);
+    print{funs.size(), "functions stored.\n"};
+
+    funs.remove(int_handle);
+    for(const auto f: funs)
+        f(22);
+    print{funs.size(), "function stored."};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+print_int 15
+print_inc_int 16
+2 functions stored.
+
+print_inc_int 23
+1 function stored.
+#+end_src
+
+
 * Various utilities
 
 This section is dedicated to utilities without overarching themes.
