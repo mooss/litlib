@@ -151,7 +151,7 @@ sub lines_and_blocks {
                 push @{$global_named_blocks{$name}}, $num + 2;
             }
 
-        } elsif($line =~ /^\s*#\+begin_src .+ (:.*)/) {
+        } elsif($line =~ /^\s*#\+begin_src [^:]+ (:.*)/) {
             $debug->("Code block start -> $line");
             my $args = extract_parameters($1);
             my $name = $args->{'noweb-ref'}[0];
