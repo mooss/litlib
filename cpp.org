@@ -888,8 +888,8 @@ class finaliser {
     finaliser()=delete;
 
   protected:
-    State state_;
     Callable side_effect_;
+    State state_;
 };
 #+end_src
 
