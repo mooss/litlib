@@ -247,7 +247,8 @@ sub print_codeblock_rec {
         unless $depth <= MAX_DEPTH;
 
     for my $linum (@{$global_named_blocks{$name}}) {
-        until ((my $line = $global_lines[$linum]) =~ /^\s*#\+end_src/ || $linum >= @global_lines) {
+        my $linum_copy = $linum; # This language is driving me nuts.
+        until ((my $line = $global_lines[$linum_copy]) =~ /^\s*#\+end_src/ || $linum_copy >= @global_lines) {
             if ($line =~ /(\s*)<<(.+)>>/) { # Assuming that noweb is always enabled.
                 print_codeblock_rec($2, $prefix . $1, $depth + 1);
             } else {
@@ -259,7 +260,7 @@ sub print_codeblock_rec {
                 $line =~ s/^,(,*(?:#\+|\*))/$1/; # Only the first comma is removed, the other must be kept.
                 $print_cb->($prefix, $line);
             }
-            ++$linum;
+            ++$linum_copy;
         }
     }
 }
