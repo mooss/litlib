@@ -21,7 +21,7 @@ use strict;
 use warnings;
 use v5.14; # for say.
 use constant {
-    MAX_DEPTH => 2
+    MAX_DEPTH => 3
 };
 use Text::ParseWords qw/quotewords/;
 use File::Basename;
