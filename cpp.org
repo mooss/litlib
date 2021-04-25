@@ -728,6 +728,91 @@ hello, universe!
 
 
 
+* Template metaprogramming
+
+This section contains helpers for doing template metaprogramming.
+
+** Foreach loops
+*** On variadic arguments
+
+A variadic foreach is a function applying a given callable to all its other arguments.
+I would have prefered to put the lambda as the last argument but I failed to make it work.
+
+#+name: variadic_foreach
+#+begin_src cpp
+template<typename Lambda, typename Arg>
+void variadic_foreach(Lambda lambda, Arg&& arg) {
+    lambda(std::forward<Arg>(arg));
+}
+
+template<typename Lambda, typename Arg, typename... Args>
+void variadic_foreach(Lambda lambda, Arg&& arg, Args&&... args) {
+    variadic_foreach(lambda, std::forward<Arg>(arg));
+    variadic_foreach(lambda, std::forward<Args>(args)...);
+}
+#+end_src
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb variadic_foreach print")>>
+
+int main() {
+    variadic_foreach([](auto x) {print{x};}, 4, 8, 15, 16, 23, 42);
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+4
+8
+15
+16
+23
+42
+#+end_src
+
+*** On tuple arguments
+
+This the same thing as =variadic_foreach=, this time with a tuple.
+I had to use a universal reference to make the function work with temporary values, like in the usage example.
+
+#+name: foreach_tuple
+#+begin_src cpp
+template<std::size_t N, typename Lambda, typename Tuple>
+void foreach_tuple_impl(Lambda lambda, Tuple& arg) {
+    lambda(std::get<N>(arg));
+    if constexpr(N + 1 < std::tuple_size_v<Tuple>) {
+        foreach_tuple_impl<N + 1>(lambda, arg);
+    }
+}
+
+template<typename Lambda, typename Tuple>
+void foreach_tuple(Lambda lambda, Tuple&& arguments) {
+    foreach_tuple_impl<0>(lambda, arguments);
+}
+#+end_src
+#+depends:foreach_tuple :cpp tuple
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb foreach_tuple print :cpp tuple")>>
+
+int main() {
+    foreach_tuple([](auto x) {print{x};}, std::make_tuple(4, 8, 15, 16, 23, 42));
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text
+4
+8
+15
+16
+23
+42
+#+end_src
+
+
 * Data structures
 
 ** Inventory
