@@ -260,7 +260,7 @@ vertices()=delete;
 From https://stackoverflow.com/a/56766138.
 
 #+name: type_str
-#+begin_src cpp :noweb-ref litlib
+#+begin_src cpp
 template <typename T>
 constexpr auto type_str() noexcept {
     std::string_view name = "Error: unsupported compiler", prefix, suffix;
