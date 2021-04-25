@@ -1,5 +1,5 @@
-#+property: header-args:cpp :eval never :main no :flags -Wall -std=c++20 :noweb no-export
-#+property: header-args :exports both :wrap "src text"
+#+property: header-args :wrap "src text :minipage"
+#+property: header-args:cpp+ :eval never :main no :flags -Wall -std=c++20 :noweb no-export
 #+options: ^:nil
 
 #+title: LitLib C++
@@ -260,7 +260,7 @@ vertices()=delete;
 From https://stackoverflow.com/a/56766138.
 
 #+name: type_str
-#+begin_src cpp
+#+begin_src cpp :minipage
 template <typename T>
 constexpr auto type_str() noexcept {
     std::string_view name = "Error: unsupported compiler", prefix, suffix;
@@ -285,7 +285,7 @@ constexpr auto type_str() noexcept {
 #+depends:type_str :cpp string_view
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb type_str :cpp iostream")>>
 using namespace std;
 int main(){
@@ -297,7 +297,7 @@ int main(){
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 int
 const long int
 double
@@ -307,7 +307,7 @@ double
 ** Type printers (=print_type= and =print_size=)
 
 #+name: print_type
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<typename T>
 void print_type() {
     std::cout << type_str<T>() << '\n';
@@ -316,7 +316,7 @@ void print_type() {
 #+depends:print_type :noweb type_str :cpp iostream
 
 #+name: print_size
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<typename T>
 void print_size() {
     std::cout << type_str<T>() << " -> " << sizeof(T) << " bytes (" << sizeof(T) * CHAR_BIT << " bits)\n";
@@ -325,11 +325,12 @@ void print_size() {
 #+depends:print_size :noweb type_str :cpp iostream climits
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
-<<include(":noweb print_size")>>
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb print_type print_size")>>
 using namespace std;
 
 int main(){
+    print_type<int>();
     print_size<int>();
     const long ft = 42;
     print_size<decltype(ft)>();
@@ -338,7 +339,8 @@ int main(){
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
+int
 int -> 4 bytes (32 bits)
 const long int -> 8 bytes (64 bits)
 double -> 8 bytes (64 bits)
@@ -355,7 +357,7 @@ The code below is an internal helper that prints a given container between squar
 This format is a reasonable representation for a sequential container, similar to Python's behaviour.
 
 #+name: sequential_redirection
-#+begin_src cpp
+#+begin_src cpp :minipage
 namespace container_redirection {
 template<class Container>
 std::ostream& sequential(std::ostream& os, const Container& container) {
@@ -376,7 +378,7 @@ std::ostream& sequential(std::ostream& os, const Container& container) {
 This helper is then used to quickly define =<<= overloads for some common sequential containers.
 
 #+name: <<forward_list
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<typename T, typename Allocator>
 std::ostream& operator<<(std::ostream& os, const std::forward_list<T, Allocator>& container) {
     return container_redirection::sequential(os, container);
@@ -385,7 +387,7 @@ std::ostream& operator<<(std::ostream& os, const std::forward_list<T, Allocator>
 #+depends:<<forward_list :noweb sequential_redirection :cpp ostream forward_list
 
 #+name: <<span
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<typename T, std::size_t Extent>
 std::ostream& operator<<(std::ostream& os, const std::span<T, Extent>& container) {
     return container_redirection::sequential(os, container);
@@ -394,7 +396,7 @@ std::ostream& operator<<(std::ostream& os, const std::span<T, Extent>& container
 #+depends:<<span :noweb sequential_redirection :cpp ostream span
 
 #+name: <<vector
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<class T, class Allocator>
 std::ostream& operator<<(std::ostream& os, const std::vector<T, Allocator>& container) {
     return container_redirection::sequential(os, container);
@@ -403,7 +405,7 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T, Allocator>& cont
 #+depends:<<vector :noweb sequential_redirection :cpp ostream vector
 
 #+name: <<array
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<class T, std::size_t N>
 std::ostream& operator<<(std::ostream& os, const std::array<T, N>& container) {
     return container_redirection::sequential(os, container);
@@ -437,7 +439,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 1. ||| forward_list |||
 lost_list [4, 8, 15, 16, 23, 42]
 
@@ -448,7 +450,7 @@ lost_vector [4, 8, 15, 16, 23, 42]
 lost_array [4, 8, 15, 16, 23, 42]
 
 4. ||| span |||
-lost_carray 0x7ffd94877080
+lost_carray 0x7fff3765b9e0
 span(lost_carray) [4, 8, 15, 16, 23, 42]
 span(lost_vector) [4, 8, 15, 16, 23, 42]
 span(lost_array) [4, 8, 15, 16, 23, 42]
@@ -518,7 +520,7 @@ struct print {
 
 Printing to stderr is a bit weird to test because org-mode simply does not display stderr and I do not know how to fix this.
 
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb print")>>
 using namespace print_;
 
@@ -529,7 +531,7 @@ int main(){
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 will print this one 1 47.2
 #+end_src
 
@@ -537,7 +539,7 @@ will print this one 1 47.2
 
 Adding a default constructor will allow the caller to print empty lines, which is something I like to do from time to time when I want to let the output breathe.
 
-#+begin_src cpp :noweb-ref print/public
+#+begin_src cpp :noweb-ref print/public :minipage
 print() {
     Destination::value << format_.end;
 }
@@ -546,7 +548,7 @@ print() {
 *** Customizable formatting
 
 To make the separator and the end delimiter customizable, a bit more magic is needed in the form of a =printer::format= constructor and a parentheses operator.
-#+begin_src cpp :noweb-ref print/public
+#+begin_src cpp :noweb-ref print/public :minipage
 print(print_::format fmt): format_(std::move(fmt))
 {}
 
@@ -558,7 +560,7 @@ void operator()(Args... args) {
 
 Now it's possible to customize the print "function" by first constructing it with a =printer::format= and then using its parentheses operator to print stuff.
 
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb print")>>
 
 int main() {
@@ -567,7 +569,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 1 -> two -> 3 -> 4, this is the end.
 #+end_src
 
@@ -577,7 +579,7 @@ Some added bonuses:
  1. It's possible to construct a printer object and to reuse it at will.
  2. The formatting parameters can also be used individually.
 
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb print")>>
 
 int main() {
@@ -590,7 +592,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 4 < 8 < 15 < 16 < 23 < 42
 lost < stargate
 
@@ -601,7 +603,7 @@ Some disadvantages:
  1. The double braced syntax is a bit wonky.
  2. Parameters must be in the correct order, src_cpp[]{print{{.end="\n", .sep=", "}}("test");} will not compile.
  3. It's possible to make an incorrect call by mistake without it triggering a compilation error.
-    #+begin_src cpp :eval no-export :exports both
+    #+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb print")>>
 int main() {
     print{.sep=", ", .end="\n"}("test");
@@ -609,7 +611,7 @@ int main() {
     #+end_src
 
     #+RESULTS:
-    #+begin_src text
+    #+begin_src text :minipage
     ,  
 
     test
@@ -625,7 +627,7 @@ int main() {
 
 The goal here is to make a tool that will make it easy to log the function calls being done, for debugging purposes.
 Since this tool was a bit complex to put in place, some implementation details have been hidden inside the namespace =details=:
-#+begin_src cpp :noweb-ref log_call
+#+begin_src cpp :noweb-ref log_call :minipage
 namespace details {
 <<details/log_call>>
 }
@@ -635,7 +637,7 @@ namespace details {
 *** Arguments logging
 
 Most arguments are logged as-is, except for strings which are enclosed in quote, to make things more readable.
-#+begin_src cpp :noweb-ref details/log_call
+#+begin_src cpp :noweb-ref details/log_call :minipage
 template<typename T>
 void log_one_argument(const T& arg) {
     std::cout << arg;
@@ -652,7 +654,7 @@ void log_one_argument(const std::string& arg) {
 
 The heavy lifting of arguments logging is done by the three function below, who respectively handle the case where no arguments are left, the case where one argument is left and the case where more than one argument is left.
 In essence, a call to =log_call_arguments= is resolved with recursive calls to the last function, which progressively consumes the =tail= and the other function are special cases to tidy up the output.
-#+begin_src cpp :noweb-ref details/log_call
+#+begin_src cpp :noweb-ref details/log_call :minipage
 void log_call_arguments() {
     std::cout << ");\n";
 }
@@ -674,7 +676,7 @@ void log_call_arguments(const T& head, Args... tail) {
 *** =log_call=
 
 Most of what is needed to log simple function calls is handled by =log_call_arguments=, only the function name and the opening paren is missing:
-#+begin_src cpp :noweb-ref log_call
+#+begin_src cpp :noweb-ref log_call :minipage
 template<typename... Args>
 void log_call(const char* function_name, Args... args) {
     std::cout << "-> " << function_name << '(';
@@ -684,7 +686,7 @@ void log_call(const char* function_name, Args... args) {
 # )
 
 In practice, using this function looks like this:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb log_call")>>
 
 int main() {
@@ -696,19 +698,19 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 -> log_call(4, 8, 15, 16, 23, "forty two", "string");
 #+end_src
 
 *** Macro
 
 This very handy macro can be used to both log and then call a function:
-#+begin_src cpp :noweb-ref log_call
+#+begin_src cpp :noweb-ref log_call :minipage
 #define LOG_AND_CALL(function, ...) log_call(#function, __VA_ARGS__); function(__VA_ARGS__);
 #+end_src
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb log_call")>>
 
 void hello(const std::string& message) {
@@ -721,7 +723,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 -> hello("universe!");
 hello, universe!
 #+end_src
@@ -739,7 +741,7 @@ A variadic foreach is a function applying a given callable to all its other argu
 I would have prefered to put the lambda as the last argument but I failed to make it work.
 
 #+name: variadic_foreach
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<typename Lambda, typename Arg>
 void variadic_foreach(Lambda lambda, Arg&& arg) {
     lambda(std::forward<Arg>(arg));
@@ -753,7 +755,7 @@ void variadic_foreach(Lambda lambda, Arg&& arg, Args&&... args) {
 #+end_src
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb variadic_foreach print")>>
 
 int main() {
@@ -762,7 +764,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 4
 8
 15
@@ -777,7 +779,7 @@ This the same thing as =variadic_foreach=, this time with a tuple.
 I had to use a universal reference to make the function work with temporary values, like in the usage example.
 
 #+name: foreach_tuple
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<std::size_t N, typename Lambda, typename Tuple>
 void foreach_tuple_impl(Lambda lambda, Tuple& arg) {
     lambda(std::get<N>(arg));
@@ -794,7 +796,7 @@ void foreach_tuple(Lambda lambda, Tuple&& arguments) {
 #+depends:foreach_tuple :cpp tuple
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb foreach_tuple print :cpp tuple")>>
 
 int main() {
@@ -803,7 +805,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 4
 8
 15
@@ -887,7 +889,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 print_int 15
 print_inc_int 16
 2 functions stored.
@@ -909,7 +911,7 @@ I also didn't like the fact that using =std::accumulate= specifically for this i
 Limiting dependencies is crucial to LitLib's developpement style since everything needs to be recompiled everytime.
 
 #+name: sum
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<class Container>
 typename Container::value_type sum(const Container& source, typename Container::value_type neutral=0) {
     for(const auto& el: source)
@@ -919,7 +921,7 @@ typename Container::value_type sum(const Container& source, typename Container::
 #+end_src
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb sum print :cpp vector array span")>>
 
 int main() {
@@ -933,7 +935,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 Sum of lost numbers with a std::vector: 108
 Same thing with a std::array: 108
 Same thing with a std::span: 108
@@ -941,7 +943,7 @@ Same thing with a std::span: 108
 \\
 
 This template does not work directly with C arrays but wrapping them in =std::span= makes it work:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb sum print :cpp span")>>
 int main() {
     float lost[]{4, 8, 15, 16, 23, 42};
@@ -950,7 +952,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 Sum of lost numbers with a C array, via std::span: 108
 #+end_src
 
@@ -995,7 +997,7 @@ Some notes on this implementation:
  - Every special member function under the sun is deleted because, by default, a given side effect should only be called once.
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb finaliser print <<vector :cpp vector")>>
 
 [[nodiscard("Will cleanup immediately.")]]
@@ -1017,7 +1019,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 Live together.
 Adding 42.
 Will clean [4, 8, 15, 16, 23, 42]
@@ -1025,7 +1027,7 @@ Die alone []
 #+end_src
 
 Note that when the return value is ignored, the side effect is enacted immediately, resulting in the following output:
-#+begin_src text
+#+begin_src text :minipage
 Live together.
 Will clean [4, 8, 15, 16, 23]
 Die alone []
@@ -1067,7 +1069,7 @@ struct subscription: public finaliser<Callable, subscription_state> {
 #+depends:subscription :noweb finaliser
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb subscription print")>>
 
 auto verbose_subscription() {
@@ -1092,7 +1094,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 cancel
 End of scope.
 already cancelled
@@ -1236,7 +1238,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 ||| Printing frenzy |||
 -> 4
 |4|
@@ -1278,7 +1280,7 @@ A problem is that there is, to my knowledge, no built-in way to specify that a k
 
 Let's use the example of the following =user= class:
 #+name: example-mandatory-user
-#+begin_src cpp
+#+begin_src cpp :minipage
 class user {
   public:
     struct keyword_arguments {
@@ -1314,7 +1316,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 group: others
 name: 
 id: 0
@@ -1349,7 +1351,7 @@ Some remarks about =mandatory=:
 
 Beyond declaring =name= and =id= as mandatory fields, this is not fully transparent as some adaptation to the =user= class is required, in the form of putting an asterisk in front of the mandatory arguments when they are used:
 #+name: example-mandatory-user-fixed
-#+begin_src cpp
+#+begin_src cpp :minipage
 class user {
   public:
     struct keyword_arguments {
@@ -1384,7 +1386,7 @@ int main() {
 #+end_src
 
 I am instead greeted by the following error messages:
-#+begin_src default
+#+begin_src default :minipage
 /tmp/babel-QfQ93l/C-src-wPBlHJ.cpp: In function ‘int main()’:
 /tmp/babel-QfQ93l/C-src-wPBlHJ.cpp:104:20: error: use of deleted function ‘mandatory<T>::mandatory() [with T = std::__cxx11::basic_string<char>]’
   104 |     user richard({});
@@ -1412,7 +1414,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 group: others
 name: ricardo
 id: 4815162342
@@ -1448,7 +1450,7 @@ To implement =anchor=, a way to remove a volatile qualifier will be needed becau
 Forcibly ignoring a qualifier is a bit brutal but I have no problem with the idea here since =volatile= is only used to bypass RVO.
 It turns out that const casts also removes volatile qualifiers:
 #+name: unvolatile
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<typename T>
 constexpr T& unvolatile(volatile T& arg) {
     return *const_cast<T*>(&arg);
@@ -1456,7 +1458,7 @@ constexpr T& unvolatile(volatile T& arg) {
 #+end_src
 
 Usage:
-#+begin_src cpp :eval no-export :flags -Wall -std=c++17 :noweb no-export :exports both
+#+begin_src cpp :eval no-export :flags -Wall -std=c++17 :noweb no-export :exports both :minipage
 <<include(":noweb unvolatile print :cpp string")>>
 int main() {
     std::string lo("4 8 15");
@@ -1466,7 +1468,7 @@ int main() {
 #+end_src
 
 #+RESULTS:
-#+begin_src text
+#+begin_src text :minipage
 4 8 15 16 23 42
 #+end_src
 
@@ -1525,7 +1527,7 @@ struct talkative {
 #+depends:talkative-example :noweb print unvolatile :cpp string
 
 =talkative= is used below to generate a trace explaining what happens.
-#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both
+#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both :wrap "src text"
 <<include(":noweb talkative-example print type_str :cpp string")>>
 
 int n = 1;
