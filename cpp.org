@@ -739,7 +739,7 @@ An inventory is a very simple data structure with only two main operations:
 An inventory has the following constraints:
  1. Iteration on the elements is supported.
  2. Non hashable types (like =std::function=) are storable.
- 3. Elements can be removed from anywhere without needing to reallocate them.
+ 3. Elements can be removed from anywhere without needing to reallocate the others.
 
 This implementation is based on the doubly-linked lists from =std::list=.
 Given the constraints, it's certainly possible to implement something much more efficient, but that will be an exercise for another day.
