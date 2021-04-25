@@ -303,35 +303,44 @@ double
 #+end_src
 
 
-** Type printer (=print_info=)
+** Type printers (=print_type= and =print_size=)
 
-#+name: print_info
-#+begin_src cpp :noweb-ref litlib
+#+name: print_type
+#+begin_src cpp
 template<typename T>
-void print_info() {
-    std::cout << type_str<T>() << " -> " << sizeof(T) << " bytes\n";
+void print_type() {
+    std::cout << type_str<T>() << '\n';
 }
 #+end_src
-#+depends:print_info :cpp iostream :noweb type_str
+#+depends:print_type :noweb type_str :cpp iostream
+
+#+name: print_size
+#+begin_src cpp
+template<typename T>
+void print_size() {
+    std::cout << type_str<T>() << " -> " << sizeof(T) << " bytes (" << sizeof(T) * CHAR_BIT << " bits)\n";
+}
+#+end_src
+#+depends:print_size :noweb type_str :cpp iostream climits
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb print_info")>>
+<<include(":noweb print_size")>>
 using namespace std;
 
 int main(){
-    print_info<int>();
+    print_size<int>();
     const long ft = 42;
-    print_info<decltype(ft)>();
-    print_info<decltype(12.3)>();
+    print_size<decltype(ft)>();
+    print_size<decltype(12.3)>();
 }
 #+end_src
 
 #+RESULTS:
 #+begin_src text
-int -> 4 bytes
-const long int -> 8 bytes
-double -> 8 bytes
+int -> 4 bytes (32 bits)
+const long int -> 8 bytes (64 bits)
+double -> 8 bytes (64 bits)
 #+end_src
 
 
@@ -1096,7 +1105,7 @@ const Observed* operator->() const {
 *** Usage
 
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb observable print-function print_info <<vector :cpp vector")>>
+<<include(":noweb observable print-function print_size <<vector :cpp vector")>>
 
 void prefix_print(int x) {
     print{x, "<-"};
@@ -1129,9 +1138,9 @@ int main() {
         number = el;
 
     print{"\n||| Types information |||"};
-    print_info<decltype(infix_sub)>();
-    print_info<decltype(number)>();
-    print_info<decltype(number)::observer_storage>();
+    print_size<decltype(infix_sub)>();
+    print_size<decltype(number)>();
+    print_size<decltype(number)::observer_storage>();
 
     print{"\n||| Access |||"};
     observable<pair> last({23, 42});
@@ -1156,9 +1165,9 @@ int main() {
 |42|
 
 ||| Types information |||
-subscription<observable<Observed>::observe<void (&)(int)>::<lambda(s)> > -> 24 bytes
-observable<int> -> 32 bytes
-std::function<void(const int&)> -> 32 bytes
+subscription<observable<Observed>::observe<void (&)(int)>::<lambda(s)> > -> 24 bytes (192 bits)
+observable<int> -> 32 bytes (256 bits)
+std::function<void(const int&)> -> 32 bytes (256 bits)
 
 ||| Access |||
 23 42
