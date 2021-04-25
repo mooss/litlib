@@ -616,7 +616,7 @@ int main() {
     #+end_src
     I don't know why this is allowed but it evidently is.
 
- 4. The syntax is inconsistent because for some reason I don't understand, src_cpp[]{std::string a("3"); print(a);} does not compile, whereas src_cpp[]{std::string a("3"); print{a});} does.
+ 4. The syntax is inconsistent because for some reason I don't understand, src_cpp[]{std::string a("3"); print(a);} does not compile, whereas src_cpp[]{std::string a("3"); print{a};} does.
 
     So my guideline would be to use braces when using the default formatting and parens when using custom formatting.
 
