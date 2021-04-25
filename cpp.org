@@ -601,7 +601,11 @@ heya it's me Imoen
 
 Some disadvantages:
  1. The double braced syntax is a bit wonky.
- 2. Parameters must be in the correct order, src_cpp[]{print{{.end="\n", .sep=", "}}("test");} will not compile.
+ 2. Parameters must be in the correct order, the following does not compile:
+    #+begin_src cpp
+print{{.end="\n", .sep=", "}}("test");
+    #+end_src
+
  3. It's possible to make an incorrect call by mistake without it triggering a compilation error.
     #+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb print")>>
@@ -618,8 +622,16 @@ int main() {
     #+end_src
     I don't know why this is allowed but it evidently is.
 
- 4. The syntax is inconsistent because for some reason I don't understand, src_cpp[]{std::string a("3"); print(a);} does not compile, whereas src_cpp[]{std::string a("3"); print{a};} does.
-
+ 4. The syntax is inconsistent because for some reason I don't understand, the following does not compile:
+    #+begin_src cpp
+std::string a("3");
+print(a);
+    #+end_src
+    Whereas the following does:
+    #+begin_src cpp
+std::string a("3");
+print{a};
+    #+end_src
     So my guideline would be to use braces when using the default formatting and parens when using custom formatting.
 
 
