@@ -412,7 +412,7 @@ std::ostream& operator<<(std::ostream& os, const std::array<T, N>& container) {
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb <<forward_list <<span <<vector <<array print-function :cpp forward_list vector array span")>>
+<<include(":noweb <<forward_list <<span <<vector <<array print :cpp forward_list vector array span")>>
 int main() {
     print{"1. ||| forward_list |||"};
     std::forward_list<int> lost_list{4, 8, 15, 16, 23, 42};
@@ -463,8 +463,8 @@ With variadic template and a bit of constructor abuse, it's possible to make a p
 What I mean by constructor abuse is that the constructor just below is not really here to construct anything, it is simply the mechanism allowing us to use the =print= struct like a function.
 It's only here to trigger the side-effect.
 
-#+name: print-function
-#+begin_src cpp :noweb-ref litlib
+#+name: print
+#+begin_src cpp
 namespace print_{
 struct err {
     constexpr static auto& value = std::cerr;
@@ -510,15 +510,15 @@ struct print {
         print_all(args...);
     }
 
-    <<print-function/public>>
+    <<print/public>>
 };
 #+end_src
-#+depends:print-function :cpp iostream
+#+depends:print :cpp iostream
 
 Printing to stderr is a bit weird to test because org-mode simply does not display stderr and I do not know how to fix this.
 
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb print-function")>>
+<<include(":noweb print")>>
 using namespace print_;
 
 int main(){
@@ -536,7 +536,7 @@ will print this one 1 47.2
 
 Adding a default constructor will allow the caller to print empty lines, which is something I like to do from time to time when I want to let the output breathe.
 
-#+begin_src cpp :noweb-ref print-function/public
+#+begin_src cpp :noweb-ref print/public
 print() {
     Destination::value << format_.end;
 }
@@ -545,7 +545,7 @@ print() {
 *** Customizable formatting
 
 To make the separator and the end delimiter customizable, a bit more magic is needed in the form of a =printer::format= constructor and a parentheses operator.
-#+begin_src cpp :noweb-ref print-function/public
+#+begin_src cpp :noweb-ref print/public
 print(print_::format fmt): format_(std::move(fmt))
 {}
 
@@ -558,7 +558,7 @@ void operator()(Args... args) {
 Now it's possible to customize the print "function" by first constructing it with a =printer::format= and then using its parentheses operator to print stuff.
 
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb print-function")>>
+<<include(":noweb print")>>
 
 int main() {
     print{{.sep=" -> ", .end=", this is the end.\n"}}(1, "two", int(7.5 -4), 2. * 2);
@@ -577,7 +577,7 @@ Some added bonuses:
  2. The formatting parameters can also be used individually.
 
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb print-function")>>
+<<include(":noweb print")>>
 
 int main() {
     auto printer = print{{.sep=" < "}};
@@ -601,7 +601,7 @@ Some disadvantages:
  2. Parameters must be in the correct order, src_cpp[]{print{{.end="\n", .sep=", "}}("test");} will not compile.
  3. It's possible to make an incorrect call by mistake without it triggering a compilation error.
     #+begin_src cpp :eval no-export :exports both
-<<include(":noweb print-function")>>
+<<include(":noweb print")>>
 int main() {
     print{.sep=", ", .end="\n"}("test");
 }
@@ -771,7 +771,7 @@ class inventory {
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb inventory print-function :cpp functional")>>
+<<include(":noweb inventory print :cpp functional")>>
 
 void print_int(int x) {
     print{"print_int", x};
@@ -833,7 +833,7 @@ typename Container::value_type sum(const Container& source, typename Container::
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb sum print-function :cpp vector array span")>>
+<<include(":noweb sum print :cpp vector array span")>>
 
 int main() {
     std::vector<int> lost_v{4, 8, 15, 16, 23, 42};
@@ -855,7 +855,7 @@ Same thing with a std::span: 108
 
 This template does not work directly with C arrays but wrapping them in =std::span= makes it work:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb sum print-function :cpp span")>>
+<<include(":noweb sum print :cpp span")>>
 int main() {
     float lost[]{4, 8, 15, 16, 23, 42};
     print{"Sum of lost numbers with a C array, via std::span:", sum(std::span(lost))};
@@ -909,7 +909,7 @@ Some notes on this implementation:
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb finaliser print-function <<vector :cpp vector")>>
+<<include(":noweb finaliser print <<vector :cpp vector")>>
 
 [[nodiscard("Will cleanup immediately.")]]
 auto cleanup_later(std::vector<int>& numbers) {
@@ -981,7 +981,7 @@ struct subscription: public finaliser<Callable, subscription_state> {
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb subscription print-function")>>
+<<include(":noweb subscription print")>>
 
 auto verbose_subscription() {
     return subscription([](auto state){
@@ -1105,7 +1105,7 @@ const Observed* operator->() const {
 *** Usage
 
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb observable print-function print_size <<vector :cpp vector")>>
+<<include(":noweb observable print print_size <<vector :cpp vector")>>
 
 void prefix_print(int x) {
     print{x, "<-"};
@@ -1214,7 +1214,7 @@ class user {
     unsigned long id_;
 };
 #+end_src
-#+depends:example-mandatory-user :noweb print-function :cpp string
+#+depends:example-mandatory-user :noweb print :cpp string
 
 In the following executable, since nothing has been defined for =name= and =id=, the default value for =string= and =unsigned int= are used instead.
 This code is perfectly valid, it compiles and executes without problem.
@@ -1285,7 +1285,7 @@ class user {
     unsigned long id_;
 };
 #+end_src
-#+depends:example-mandatory-user-fixed :noweb mandatory print-function :cpp string
+#+depends:example-mandatory-user-fixed :noweb mandatory print :cpp string
 
 Now the following code does not compile:
 #+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :minipage
@@ -1370,7 +1370,7 @@ constexpr T& unvolatile(volatile T& arg) {
 
 Usage:
 #+begin_src cpp :eval no-export :flags -Wall -std=c++17 :noweb no-export :exports both
-<<include(":noweb unvolatile print-function :cpp string")>>
+<<include(":noweb unvolatile print :cpp string")>>
 int main() {
     std::string lo("4 8 15");
     volatile std::string st("16 23 42");
@@ -1435,11 +1435,11 @@ struct talkative {
     }
 };
 #+end_src
-#+depends:talkative-example :noweb print-function unvolatile :cpp string
+#+depends:talkative-example :noweb print unvolatile :cpp string
 
 =talkative= is used below to generate a trace explaining what happens.
 #+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both
-<<include(":noweb talkative-example print-function type_str :cpp string")>>
+<<include(":noweb talkative-example print type_str :cpp string")>>
 
 int n = 1;
 void title(std::string const& name) {

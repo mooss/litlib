@@ -83,7 +83,7 @@ int main(){
 
 Since =cpp.org= was included as a source, we can use the =print= function defined in it:
 #+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export
-<<include(":noweb print-function")>>
+<<include(":noweb print")>>
 int main(){
     print{"Let's print the lost numbers:", 4, 8, 15, 16, 23, 42};
 }
