@@ -871,6 +871,281 @@ int main() {
 #+end_src
 
 
+** Typelist (=meta::list=)
+
+A typelist does not do anything by itself, it is merely a vessel for its underlying types.
+What is important is the tools that can be made around that typelist.
+
+The namespace =meta= will be used throughout this section to give operations on typelists a distinct and memorable name.
+
+#+name: meta::list
+#+begin_src cpp :minipage
+namespace meta {
+template<typename... Types>
+struct list {};
+} // namespace meta
+#+end_src
+
+A metalist can at least be printed, thanks to =print_type=:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb meta::list print_type")>>
+
+int main() {
+    print_type<meta::list<int, float>>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+meta::list<int, float>
+#+end_src
+
+*** Strip template arguments
+
+This utility extracts the template arguments of a templated class into a metalist.
+For example, applying it to a =Widget<int, float>= would give a =metalist<int, float>=.
+
+At first, it was to be called =meta::args=, because its fetches the template arguments, but since in practice it removes the enclosing type to replace it with a metalist, calling it =meta::strip= seemed to describe more accurately was is being done here.
+
+#+name: meta::strip
+#+begin_src cpp :minipage
+namespace meta {
+template<typename T>
+struct strip_impl;
+
+template<template<typename...> class External, typename... Internal>
+struct strip_impl<External<Internal...>> {
+    using type = list<Internal...>;
+};
+
+template<class External>
+using strip = strip_impl<External>::type;
+} // namespace meta
+#+end_src
+#+depends:meta::strip :noweb meta::list
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb meta::strip print_type :cpp vector")>>
+
+int main() {
+    print_type<meta::strip<std::vector<int>>>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+meta::list<int, std::allocator<int> >
+#+end_src
+
+*** Dress a metalist
+
+Dressing is the opposite operation of stripping, it transforms a metalist into the desired type.
+
+#+name: meta::dress
+#+begin_src cpp :minipage
+namespace meta {
+template<template<typename...> class Garment, typename Typelist>
+struct dress_impl;
+
+template<template<typename...> class Garment, typename... Types>
+struct dress_impl<Garment, list<Types...>> {
+    using type = Garment<Types...>;
+};
+
+template<template<typename...> class Garment, typename Typelist>
+using dress = dress_impl<Garment, Typelist>::type;
+} // namespace meta
+#+end_src
+#+depends:meta::dress :noweb meta::list
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb meta::strip meta::dress print_type :cpp vector list")>>
+
+int main() {
+    using stripped = meta::strip<std::vector<int>>;
+    print_type<stripped>();
+    print_type<meta::dress<std::list, stripped>>();
+    print_type<std::list<int>>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+meta::list<int, std::allocator<int> >
+std::__cxx11::list<int, std::allocator<int> >
+std::__cxx11::list<int, std::allocator<int> >
+#+end_src
+
+*** Concatenation
+
+Implementation:
+#+name: meta::cat
+#+begin_src cpp :minipage
+namespace meta {
+template<typename Element, typename Typelist>
+struct cat_impl;
+
+template<typename Element, typename... Args>
+struct cat_impl<Element, list<Args...>> {
+    using type = list<Element, Args...>;
+};
+
+template<typename Element, typename Typelist>
+using cat = cat_impl<Element, Typelist>::type;
+} // namespace meta
+#+end_src
+#+depends:meta::cat :noweb meta::list
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb meta::cat meta::strip print_type :cpp vector")>>
+
+int main() {
+    print_type<meta::cat<float, meta::strip<std::vector<int>>>>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+meta::list<float, int, std::allocator<int> >
+#+end_src
+
+*** Apply an operation to all the types
+
+This is similar to a =map= function, except that instead of applying a function to every element of a data structure, a template template is applied to every element in the metalist.
+The name apply was chosen instead of map to avoid any confusion with a container of types.
+
+#+name: meta::apply
+#+begin_src cpp :minipage
+namespace meta {
+template<template<typename...> class Operation, typename... Types>
+struct apply_impl;
+
+template<template<typename...> class Operation, typename T>
+struct apply_impl<Operation, T> {
+    using type = list<Operation<T>>;
+};
+
+template<template<typename...> class Operation, typename Head, typename... Tail>
+struct apply_impl<Operation, Head, Tail...> {
+    using type = cat<Operation<Head>, typename apply_impl<Operation, Tail...>::type>;
+};
+
+template<template<typename...> class Operation, typename... Types>
+using apply = apply_impl<Operation, Types...>::type;
+} // namespace meta
+#+end_src
+#+depends:meta::apply :noweb meta::list meta::cat
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage :wrap "src default :minipage"
+<<include(":noweb meta::apply meta::strip print_type :cpp vector")>>
+
+int main() {
+    using stripped = meta::apply<meta::strip, std::vector<int>, std::vector<float>, std::vector<bool>>;
+    print_type<stripped>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src default :minipage
+meta::list<meta::list<int, std::allocator<int> >, meta::list<float, std::allocator<float> >, meta::list<bool, std::allocator<bool> > >
+#+end_src
+
+*** Steal templated arguments
+
+The operation implemented here is called stealing because it is a case of one template template (the stealer) taking for itself the arguments of another template template (the robbed).
+
+#+name: meta::steal
+#+begin_src cpp :minipage
+namespace meta {
+template<template<typename...> class Stealer, typename Robbed>
+struct steal_impl;
+
+template<
+    template<typename...> class Stealer,
+    template<typename...> class Robbed,
+    typename... Plunder
+> struct steal_impl<Stealer, Robbed<Plunder...>> {
+    using type = Stealer<Plunder...>;
+};
+
+template<template<typename...> class Stealer, typename Robbed>
+using steal = steal_impl<Stealer, Robbed>::type;
+} // namespace meta
+#+end_src
+
+
+Here we can see a cruel =std::list= stealing from a defenceless =std::vector=:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb print_type meta::steal :cpp vector list")>>
+
+int main() {
+    print_type<meta::steal<std::list, std::vector<int>>>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+std::__cxx11::list<int, std::allocator<int> >
+#+end_src
+And that, is why no one trusts =std::list=.
+
+Technically this operation has nothing to do in the metalist section because it does not depend on it.
+It is nevertheless included here because it is very useful in conjunction with metalist operations, as can be seen in the next section.
+
+*** Steal a list of templated arguments
+
+Stealing a list of arguments is a bit different from stealing only one argument because the list of templates that were stolen must be wrapped into another type.
+To stay within the stealing metaphor, this wrapping type is here called a guild.
+
+A kind of template closure is used here to do something looking like a partial application of the =steal= template.
+This is done in order to make it possible to apply it, because =apply= expects a template template taking one argument.
+
+#+name: meta::stealall
+#+begin_src cpp :minipage
+namespace meta {
+template<
+    template<typename...> class Guild,
+    template<typename...> class Stealer,
+    typename... UnsuspectingTargets
+>
+struct stealall_impl {
+    template<typename Robbed>
+    using stealer_closure = steal<Stealer, Robbed>;
+
+    using stealed_metalist = apply<stealer_closure, UnsuspectingTargets...>;
+
+    using type = dress<Guild, stealed_metalist>;
+};
+
+template<
+    template<typename...> class Guild,
+    template<typename...> class Stealer,
+    typename... UnsuspectingTargets
+>
+using stealall = stealall_impl<Guild, Stealer, UnsuspectingTargets...>::type;
+} // namespace meta
+#+end_src
+#+depends:meta::stealall :noweb meta::steal meta::apply meta::dress
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage :wrap "src default :minipage"
+<<include(":noweb print_type meta::stealall :cpp vector list")>>
+
+int main() {
+    print_type<meta::stealall<std::tuple, std::list, std::vector<int>, std::vector<float>, std::vector<bool>>>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src default :minipage
+std::tuple<std::__cxx11::list<int, std::allocator<int> >, std::__cxx11::list<float, std::allocator<float> >, std::__cxx11::list<bool, std::allocator<bool> > >
+#+end_src
+
+
 * Data structures
 
 ** Inventory

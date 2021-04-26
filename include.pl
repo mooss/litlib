@@ -43,7 +43,8 @@ sub extract_parameters {
     my $parameters_string = shift;
     $parameters_string =~ s/^\s*://
         or stop "Parameters string `$parameters_string` does not start with `:`";
-    my @parameters = quotewords ':', 1, $parameters_string;
+    # (^| ) allows : to be used inside values or parameters.
+    my @parameters = quotewords '(^| ):', 1, $parameters_string;
     my %parameters = map {s/\s+$//; my ($h, @t) = quotewords '\s+', 0, $_; $h => \@t}
         @parameters;
     return \%parameters;
