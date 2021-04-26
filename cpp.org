@@ -827,6 +827,50 @@ int main() {
 #+end_src
 
 
+** Uniform tuple
+
+A uniform tuple is a tuple whose elements have the same type.
+The goal is to provide a shortcut because having to write =tuple<int, int, int, int, int, int>= is much too tedious, error prone and difficult to read when compared to =uniform_tuple<6, int>=.
+
+This solution to define homogeneous tuples of a given size was copied from https://stackoverflow.com/a/38894158.
+#+name: uniform_tuple
+#+begin_src cpp :minipage
+template<size_t I, typename T>
+struct uniform_tuple_impl {
+    template<typename... Args>
+    using type = typename uniform_tuple_impl<I-1, T>::template type<T, Args...>;
+};
+
+template<typename T>
+struct uniform_tuple_impl<0, T> {
+    template<typename... Args>
+    using type = std::tuple<Args...>;
+};
+
+template<size_t I, typename T>
+using uniform_tuple = typename uniform_tuple_impl<I, T>::template type<>;
+#+end_src
+#+depends:uniform_tuple :cpp tuple
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb foreach_tuple print uniform_tuple :cpp tuple")>>
+
+int main() {
+    uniform_tuple<4, float> lostf(4.8, 15.16, 23, 42l);
+    foreach_tuple([](auto x) {print{x};}, lostf);
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+4.8
+15.16
+23
+42
+#+end_src
+
+
 * Data structures
 
 ** Inventory
