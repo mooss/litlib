@@ -945,7 +945,7 @@ Dressing is the opposite operation of stripping, it transforms a metalist into t
 #+name: meta::dress
 #+begin_src cpp :minipage
 namespace meta {
-template<template<typename...> class Garment, typename Typelist>
+template<template<typename...> class Garment, class Typelist>
 struct dress_impl;
 
 template<template<typename...> class Garment, typename... Types>
@@ -953,7 +953,7 @@ struct dress_impl<Garment, list<Types...>> {
     using type = Garment<Types...>;
 };
 
-template<template<typename...> class Garment, typename Typelist>
+template<template<typename...> class Garment, class Typelist>
 using dress = dress_impl<Garment, Typelist>::type;
 } // namespace meta
 #+end_src
@@ -980,11 +980,12 @@ std::__cxx11::list<int, std::allocator<int> >
 
 *** Concatenation
 
-Implementation:
+Currently only concatenation of a type and a metalist is implemented.
+
 #+name: meta::cat
 #+begin_src cpp :minipage
 namespace meta {
-template<typename Element, typename Typelist>
+template<typename Element, class Typelist>
 struct cat_impl;
 
 template<typename Element, typename... Args>
@@ -1014,7 +1015,7 @@ meta::list<float, int, std::allocator<int> >
 
 *** Apply an operation to all the types
 
-This is similar to a =map= function, except that instead of applying a function to every element of a data structure, a template template is applied to every element in the metalist.
+This is similar to a =map= function, except that instead of applying a function to every element of a data structure, a template template is applied to every type in the metalist.
 The name apply was chosen instead of map to avoid any confusion with a container of types.
 
 #+name: meta::apply
@@ -1054,14 +1055,14 @@ int main() {
 meta::list<meta::list<int, std::allocator<int> >, meta::list<float, std::allocator<float> >, meta::list<bool, std::allocator<bool> > >
 #+end_src
 
-*** Steal templated arguments
+*** Steal typenames
 
 The operation implemented here is called stealing because it is a case of one template template (the stealer) taking for itself the arguments of another template template (the robbed).
 
 #+name: meta::steal
 #+begin_src cpp :minipage
 namespace meta {
-template<template<typename...> class Stealer, typename Robbed>
+template<template<typename...> class Stealer, class Robbed>
 struct steal_impl;
 
 template<
@@ -1072,7 +1073,7 @@ template<
     using type = Stealer<Plunder...>;
 };
 
-template<template<typename...> class Stealer, typename Robbed>
+template<template<typename...> class Stealer, class Robbed>
 using steal = steal_impl<Stealer, Robbed>::type;
 } // namespace meta
 #+end_src
@@ -1108,12 +1109,12 @@ This is done in order to make it possible to apply it, because =apply= expects a
 #+begin_src cpp :minipage
 namespace meta {
 template<
-    template<typename...> class Guild,
+    template<class...> class Guild,
     template<typename...> class Stealer,
-    typename... UnsuspectingTargets
+    class... UnsuspectingTargets
 >
 struct stealall_impl {
-    template<typename Robbed>
+    template<class Robbed>
     using stealer_closure = steal<Stealer, Robbed>;
 
     using stealed_metalist = apply<stealer_closure, UnsuspectingTargets...>;
@@ -1122,9 +1123,9 @@ struct stealall_impl {
 };
 
 template<
-    template<typename...> class Guild,
+    template<class...> class Guild,
     template<typename...> class Stealer,
-    typename... UnsuspectingTargets
+    class... UnsuspectingTargets
 >
 using stealall = stealall_impl<Guild, Stealer, UnsuspectingTargets...>::type;
 } // namespace meta
@@ -1136,13 +1137,95 @@ Usage:
 <<include(":noweb print_type meta::stealall :cpp vector list")>>
 
 int main() {
-    print_type<meta::stealall<std::tuple, std::list, std::vector<int>, std::vector<float>, std::vector<bool>>>();
+    using stolen_vector = meta::stealall<
+        std::tuple, std::list,
+        std::vector<int>, std::vector<float>, std::vector<bool>
+    >;
+    print_type<stolen_vector>();
 }
 #+end_src
 
 #+RESULTS:
 #+begin_src default :minipage
 std::tuple<std::__cxx11::list<int, std::allocator<int> >, std::__cxx11::list<float, std::allocator<float> >, std::__cxx11::list<bool, std::allocator<bool> > >
+#+end_src
+
+
+** Non-type list
+
+I didn't think about the fact that types and non-types are not compatibles in templates.
+As a quick fix for what I needed, I simply adapted =meta::steal= and =meta::stealall= for non-types, by replacing =typename= with =auto= and by adding a =_auto= suffix where appropriate.
+
+#+name: meta::stealall_auto
+#+begin_src cpp
+namespace meta {
+template<template<auto...> class Stealer, class Robbed>
+struct steal_auto_impl;
+
+template<
+    template<auto...> class Stealer,
+    template<auto...> class Robbed,
+    auto... Plunder
+> struct steal_auto_impl<Stealer, Robbed<Plunder...>> {
+    using type = Stealer<Plunder...>;
+};
+
+template<template<auto...> class Stealer, class Robbed>
+using steal_auto = steal_auto_impl<Stealer, Robbed>::type;
+} // namespace meta
+
+namespace meta {
+template<
+    template<class...> class Guild,
+    template<auto...> class Stealer,
+    class... UnsuspectingTargets
+>
+struct stealall_auto_impl {
+    template<class Robbed>
+    using stealer_closure = steal_auto<Stealer, Robbed>;
+
+    using stealed_metalist = apply<stealer_closure, UnsuspectingTargets...>;
+
+    using type = dress<Guild, stealed_metalist>;
+};
+
+template<
+    template<class...> class Guild,
+    template<auto...> class Stealer,
+    class... UnsuspectingTargets
+>
+using stealall_auto = stealall_auto_impl<Guild, Stealer, UnsuspectingTargets...>::type;
+} // namespace meta
+#+end_src
+#+depends:meta::stealall_auto :noweb meta::apply meta::dress
+
+
+#+begin_src cpp :eval no-export :exports both :minipage :wrap "src default :minipage" :minipage
+<<include(":noweb meta::stealall_auto print_type")>>
+
+template<int X>
+struct squared {
+    static constexpr int result = X * X;
+};
+
+template<int X>
+struct doubled {
+    static constexpr int result = X * 2;
+};
+
+int main() {
+    using double_steal = meta::stealall_auto<
+        std::tuple, doubled,
+        squared<4>, squared<8>, squared<15>,
+        squared<16>, squared<23>, squared<42>
+    >;
+    print_type<double_steal>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src default :minipage
+std::tuple<doubled<4>, doubled<8>, doubled<15>, doubled<16>, doubled<23>, doubled<42> >
 #+end_src
 
 
