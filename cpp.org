@@ -1,5 +1,5 @@
 #+property: header-args :wrap "src text :minipage"
-#+property: header-args:cpp+ :eval never :main no :flags -Wall -std=c++20 :noweb no-export
+#+property: header-args:cpp+ :eval never :main no :flags -std=c++20 -Wall -Werror :noweb no-export
 #+options: ^:nil
 
 #+title: LitLib C++
@@ -1200,7 +1200,7 @@ using stealall_auto = stealall_auto_impl<Guild, Stealer, UnsuspectingTargets...>
 #+depends:meta::stealall_auto :noweb meta::apply meta::dress
 
 
-#+begin_src cpp :eval no-export :exports both :minipage :wrap "src default :minipage" :minipage
+#+begin_src cpp :eval no-export :exports both :minipage :wrap "src default :minipage"
 <<include(":noweb meta::stealall_auto print_type")>>
 
 template<int X>
@@ -1721,7 +1721,7 @@ class user {
 
 In the following executable, since nothing has been defined for =name= and =id=, the default value for =string= and =unsigned int= are used instead.
 This code is perfectly valid, it compiles and executes without problem.
-#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both :minipage
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb example-mandatory-user")>>
 
 int main() {
@@ -1791,7 +1791,7 @@ class user {
 #+depends:example-mandatory-user-fixed :noweb mandatory print :cpp string
 
 Now the following code does not compile:
-#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :minipage
+#+begin_src cpp :eval never :minipage
 <<include(":noweb example-mandatory-user-fixed")>>
 
 int main() {
@@ -1819,7 +1819,7 @@ Which are surprisingly appropriate, I am pleasantly surprised.
 
 If only one mandatory argument is supplied, a compilation error is also triggered for the missing field.
 On the other hand, the following code works as expected:
-#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both :minipage
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb example-mandatory-user-fixed")>>
 
 int main() {
@@ -1872,7 +1872,7 @@ constexpr T& unvolatile(volatile T& arg) {
 #+end_src
 
 Usage:
-#+begin_src cpp :eval no-export :flags -Wall -std=c++17 :noweb no-export :exports both :minipage
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb unvolatile print :cpp string")>>
 int main() {
     std::string lo("4 8 15");
@@ -1941,7 +1941,7 @@ struct talkative {
 #+depends:talkative-example :noweb print unvolatile :cpp string
 
 =talkative= is used below to generate a trace explaining what happens.
-#+begin_src cpp :eval no-export :flags -Wall -std=c++20 :noweb no-export :exports both :wrap "src text"
+#+begin_src cpp :eval no-export :wrap "src text"
 <<include(":noweb talkative-example print type_str :cpp string")>>
 
 int n = 1;
