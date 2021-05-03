@@ -1434,7 +1434,8 @@ First element: [4, 8]
 
 This section is dedicated to utilities without overarching themes.
 
-** Sum of a container
+** Math
+*** Sum of a container
 
 I didn't like the idea of using =std::accumulate= with a begin iterator, a end iterator and a mandatory neutral element, so I made the =sum= template for a more Python-like experience.
 
@@ -1485,6 +1486,24 @@ int main() {
 #+RESULTS:
 #+begin_src text :minipage
 Sum of lost numbers with a C array, via std::span: 108
+#+end_src
+
+*** Minmax
+
+#+name: min
+#+begin_src cpp
+template<class T>
+const T& min(const T& left, const T& right) {
+    return left < right ? left: right;
+}
+#+end_src
+
+#+name: max
+#+begin_src cpp
+template<class T>
+const T& max(const T& left, const T& right) {
+    return left > right ? left: right;
+}
 #+end_src
 
 
