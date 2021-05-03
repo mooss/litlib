@@ -498,7 +498,7 @@ struct print {
     }
 
     template<typename T, typename... Args>
-    void print_all(const T& el, Args... args) {
+    void print_all(const T& el, const Args&... args) {
         print_one(el);
         print_one(format_.sep);
         print_all(args...);
@@ -509,7 +509,7 @@ struct print {
   public:
     // Default formatting.
     template<typename... Args>
-    print(Args... args) {
+    print(const Args&... args) {
         print_all(args...);
     }
 
@@ -553,7 +553,7 @@ print(print_::format fmt): format_(std::move(fmt))
 {}
 
 template<typename... Args>
-void operator()(Args... args) {
+void operator()(const Args&... args) {
     print_all(args...);
 }
 #+end_src
