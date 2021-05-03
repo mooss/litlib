@@ -96,6 +96,12 @@ my $noweb = $flags{noweb} || [];
 my $c_string = $flags{'c-string'};
 my $tangle = defined $flags{tangle};
 
+# Add additional filenames.
+if(defined $flags{defs}) {
+    # Deduplication should be put in place some day.
+    $filenames .= ' ' . join(' ', @{$flags{defs}});
+}
+
 stop(':c-string is incompatible with :cpp, it should only be used with :noweb.')
     if defined $c_string and @$cpp > 0;
 
