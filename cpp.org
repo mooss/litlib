@@ -1229,6 +1229,36 @@ std::tuple<doubled<4>, doubled<8>, doubled<15>, doubled<16>, doubled<23>, double
 #+end_src
 
 
+** Constexpr utilities
+
+#+name: constexpr/abs
+#+begin_src cpp
+template<typename T>
+constexpr T abs(T value) {
+    return value >= 0 ? value: -value;
+}
+#+end_src
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb constexpr/abs print")>>
+
+int main() {
+    print{abs(-4)};
+    print{abs(-8.1516)};
+    print{abs(23.42)};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+4
+8.1516
+23.42
+#+end_src
+
+
+
 * Data structures
 
 ** Inventory
