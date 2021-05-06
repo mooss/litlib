@@ -14,7 +14,6 @@ source="$1"
 destination="$2"
 
 function process_source() {
-    # jupyter-python blocks do not render as python when compiled with pandoc.
     cat "$source"
 }
 
