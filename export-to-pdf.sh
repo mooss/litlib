@@ -32,3 +32,4 @@ process_source | pandoc --standalone\
                         --variable lang:en\
                         --lua-filter "$where/filters/minipage.lua"\
                         --lua-filter "$where/filters/noweb-call.lua"\
+                        --lua-filter "$where/filters/comment-noweb-in-bash.lua"\

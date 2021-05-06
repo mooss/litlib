@@ -12,24 +12,23 @@ The later sections are dedicated to the implementation of the filters, except fo
 ** Noweb tools
 
 *** Pandoc output exploration
-The following code block will export a =org= code block to a prettified json exposing pandoc's representation.
-It's the first tool to reach for when trying to manipulate pandoc's output.
+
+The following code block can be used to apply pandoc to a given code block:
+#+name: pandoc
+#+begin_src bash :var what="" pandoc_args="" format="org"
+./include.pl pandoc.org ":noweb $what" | pandoc  $pandoc_args --standalone --from org --to $format
+#+end_src
+
+This other code block is does the same but only outputs prettified json
+It's the first tool to reach for when trying to understand pandoc's output.
 
 #+name: pandoc-json
 #+begin_src bash :var what="" pandoc_args=""
 ./include.pl pandoc.org ":noweb $what" | pandoc --standalone --from org --to json $pandoc_args | json_pp
 #+end_src
 
-This other code block will transform org document to org documents.
-It's more useful than it looks at first glance, because it can be used to apply Lua filters to transform pandoc's representation.
-
-#+name: pandoc-org
-#+begin_src bash :var what="" pandoc_args=""
-./include.pl pandoc.org ":noweb $what" | pandoc --standalone --from org --to org $pandoc_args
-#+end_src
-
 Those code blocks can be called from anywhere in this document with org mode's =#+call:= syntax.
-For example, a call to =pandoc-org= will look like =#+call: pandoc-org("example", "--filters some-filter.lua")=.
+For example, a call to =pandoc-json= will look like =#+call: pandoc-json("example", "--filters some-filter.lua")=.
 
 *** Code block inclusion
 
@@ -212,7 +211,7 @@ end
 
 Exporting an org document to another org document seems to strip off all metadata, but what matters is that the snippet is enclosed within a minipage.
 
-#+Call: pandoc-org("minipage-noweb-arg", "--lua-filter filters/minipage.lua") :wrap "src org :minipage"
+#+Call: pandoc("minipage-noweb-arg", "--lua-filter filters/minipage.lua") :wrap "src org :minipage"
 
 #+RESULTS:
 #+begin_src org :minipage
@@ -344,7 +343,8 @@ end
 #+depends:noweb-call :noweb tokenise
 #+tangle:noweb-call filters/noweb-call.lua
 
-#+Call: pandoc-org("noweb-call-analysis", "--lua-filter filters/noweb-call.lua") :wrap "src org :minipage"
+
+#+Call: pandoc("noweb-call-analysis", "--lua-filter filters/noweb-call.lua") :wrap "src org :minipage"
 
 #+RESULTS:
 #+begin_src org :minipage
