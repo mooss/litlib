@@ -39,6 +39,7 @@ For example, a call to =pandoc-json= will look like =#+call: pandoc-json("exampl
 ./include.pl pandoc.org ":noweb $noweb"
 #+end_src
 
+
 ** Resources
 
 The most important resource I've found is pandoc's Lua filters documentation at https://pandoc.org/lua-filters.
@@ -172,6 +173,7 @@ So what is needed to enclose an annotated code block in a minipage is:
  2. Add a latex =RawBlock= before it to open the minipage.
  3. Add another latex =RawBlock= after it to close the minipage.
 
+
 ** Implementation
 
 For the implementation, I used pandoc's guide on Lua filters (https://pandoc.org/lua-filters.html) and a neat Lua cheatsheet available at https://devhints.io/lua.
@@ -207,7 +209,8 @@ end
 #+end_src
 #+tangle:minipage filters/minipage.lua
 
-** Testing
+
+** Test
 
 Exporting an org document to another org document seems to strip off all metadata, but what matters is that the snippet is enclosed within a minipage.
 
@@ -305,7 +308,8 @@ Pandoc ast shows that the block is included as-is inside an org =RawBlock=:
 }
 #+end_src
 
-** Implementation and testing
+
+** Implementation
 
 Most of the work is done by =tokenise= (from the support library).
 The bulk of the processing shown here is a slight tweaking of the output.
@@ -317,8 +321,7 @@ It will probably need some adjustments to avoid conflicting with Python's keywor
 function RawBlock(block)
    if block.format == 'org' then
       tokens = tokenise(block.text)
-      if #tokens > 1 and tokens[1] == '#+Call:'
-      then
+      if #tokens > 1 and tokens[1] == '#+Call:' then
          call = ''
          for i=2, #tokens do
             current = tokens[i]
@@ -344,6 +347,8 @@ end
 #+tangle:noweb-call filters/noweb-call.lua
 
 
+** Test
+
 #+Call: pandoc("noweb-call-analysis", "--lua-filter filters/noweb-call.lua") :wrap "src org :minipage"
 
 #+RESULTS:
@@ -354,6 +359,7 @@ end
 #+end_src
 
 It's working as expected.
+
 
 ** Limitations
 
@@ -612,6 +618,7 @@ function setdel(set, key)
 end
 #+end_src
 
+
 ** String manipulation
 
 *** Search unescaped characters
@@ -706,6 +713,7 @@ test_skipbyte('Nothing ~ to skip', '~')
 >	`Xs`
 >	`Nothing ~ to skip`
 #+end_src
+
 
 ** Tokenisation
 
