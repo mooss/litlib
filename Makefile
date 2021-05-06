@@ -1,5 +1,5 @@
 # The source documents from which everything stems:
-ORG_SOURCES := README cpp pandoc
+ORG_SOURCES := README cpp pandoc bash
 
 .PHONY: pdf LitLib
 

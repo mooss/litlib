@@ -1,0 +1,182 @@
+#+title: LitLib Bash
+#+author: mooss
+
+#+property: header-args :wrap "src text :minipage"
+#+property: header-args:bash+ :noweb no-export
+#+options: ^:nil
+
+* Noweb arguments
+
+I love Bash, especially when looking at it like a glue between modular utilities (pipes are such a simple yet incredibly powerful mechanism).
+Something that I don't like to do, but frequently need to do in Bash is parsing arguments.
+This section presents an awesome hack that can be used to somewhat bypass arguments parsing.
+
+The trick is to use the noweb arguments syntax to initialise variables.
+The code block below will parse the noweb variables inside the =$noweb= variable and instantiate them.
+It was not made into a function because I failed to make the =declare='d variables escape the function scope.
+#+begin_src bash :eval never :minipage :noweb-ref load-noweb-impl
+if [ -n "$noweb" ]
+then
+    while IFS= read -r -d $'\0' definition
+    do
+        declare "$definition"
+    done < <(echo "$noweb" | sedrex)
+fi
+#+end_src
+#+depends:load-noweb-impl :noweb sedrex
+
+A part of the magic at play here is handled by =sedrex=.
+This command makes a few transformations to =$noweb= to make it into a null-separated list of variable definitions.
+
+The rest of the magic is using this one weird =while IFS= trick borrowed from https://stackoverflow.com/a/8677566 to iterate on said null-separated list of variable definitions.
+
+** Dependencies
+
+Because this noweb-loading code block has dependencies, they must be resolved via the include script.
+#+name: load-noweb
+#+begin_src bash :minipage
+./include.pl bash.org ':noweb load-noweb-impl'
+#+end_src
+
+
+** Basic usage
+
+A bash variable called =noweb= containing a noweb-style variables definition must be placed before the call to the loading block.
+#+begin_src bash :minipage :exports both
+noweb=":first 6 :lost 4 8 15 16 23 42 :last 108"
+<<load-noweb()>>
+echo "'$first'"
+echo "'$lost'"
+echo "'$last'"
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+'6'
+'4 8 15 16 23 42'
+'108'
+#+end_src
+
+** "Parsing" (=sedrex=)
+
+=sedrex=, the "parsing" function associated to =noweb_load= will be explained line by line.
+It kinda looks like an asymmetrical spaceship, a sideways evil throne or the emerging city of Atlantis.
+# Poseidon, Ancient tyrant ruling the ocean of space.
+#+name: sedrex
+#+begin_src bash :minipage
+function sedrex() {
+    sed -r\
+        -e 's|$|\x0|'\
+        -e 's|(^\| ):|\x0|g'\
+        -e 's|(\x0[^ ]+)\x0|\1=\x3\x0|g'\
+        -e 's|(\x0[^ ]+) |\1=|g'\
+        -e 's|^\x0||'
+}
+#+end_src
+This function was named based on its implementation.
+The first three letters are self-explanatory, =r= is for the extended regex flag (=-r=), =e= for the 5 scripts (=-e=) and =x= for the control codes (=\x0= and =\x3=).
+I could't fit a =s= in here without ruining the regalian vibe.
+
+Here is the promised line-by-line breakdown of =sedrex=:
+ 1. *=sed -r=*
+
+    The whole function is only a call to =sed=, acting on the content of =stdin=, with extended regular expressions enabled.
+
+    The following line explanations will assume that =stdin= is /=:lost 4 8 15 16 23 42 :last=/.
+
+ 2. *=-e 's|$|\x0|'=*
+
+    _=\x0=_ is equivalent to C's null character (the =char= ='\0'=).
+    So this adds a null character at the end of =stdin=.
+
+    =stdin= is now /=:lost 4 8 15 16 23 42 :last\x0=/.
+
+ 3. *=-e 's|(^\| ):|\x0|g'=*
+
+    Replaces all _=:=_ at the start of =stdin= or prefixed with a space by a null character.
+    Therefore null characters are used as separators between variable definitions and also as begin and end delimiters.
+
+    =stdin= is now /=\x0lost 4 8 15 16 23 42\x0last\x0=/.
+
+ 4. *=-e 's|(\x0[^ ]+)\x0|\1=\x3\x0|g'=*
+
+    _=(\x0[^ ]+)=_ is at this point the definition of a variable identifier, something like /=\x0lost=/ and =\x0last=.
+    This in fact transforms empty variables into bash variable assignments using the value _=\x3=_.
+    This is done in order to make empty variables easily distinguishable from both non declared and non empty ones.
+
+    =stdin= is now /~\x0lost 4 8 15 16 23 42\x0last=\x3\x0~/.
+
+ 5. *=-e 's|(\x0[^ ]+) |\1=|g'=*
+
+    This transforms the non-empty variables identifiers into bash variable assignments.
+
+    =stdin= is now /~\x0lost=4 8 15 16 23 42\x0last=\x3\x0~/.
+
+ 6. *=-e 's|^\x0||'=*
+
+    This removes the leading null character, otherwise it would result in an empty =$definition= in the =while IFS= loop.
+    The leading _=\x0=_ symbol was only put in place to make the lines 4 and 5 behave the same way for the first definition and the subsequent ones.
+
+    =stdin= is now /~lost=4 8 15 16 23 42\x0last=\x3\x0~/, ready to be processed by the =while IFS= loop (which expects the last /=\x0=/).
+
+
+Here is an illustration of what =sedrex= does:
+#+begin_src bash :minipage :exports both
+<<sedrex>>
+echo ":lost 4 8 15 16 23 42 :last"\
+    | sedrex\
+    | sed -e 's/\x3/NULL/g' -e 's/\x0/\n/g'
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+lost=4 8 15 16 23 42
+last=NULL
+
+#+end_src
+
+** Predicates
+
+=declared=, =empty= and =valued= are using indirection to test against the value of the variable whose name is contained in their first argument.
+For example, if =$lost= is =4 8 15 16 23 42=, when =defined lost= is called, the value of =$1= is the string ~"lost"~, therefore the value of ="${!1}"= is the string =4 8 15 16 23 42=.
+
+#+begin_src bash :noweb-ref load-noweb-impl :minipage
+function declared() {
+    test -n "${!1}"
+}
+function empty() {
+    test "${!1}" == $'\3'
+}
+function valued() {
+    declared $1 && ! empty $1
+}
+#+end_src
+Pandoc's syntax highlighting doesn't like this ="${!1}"=, but in practice i'm pretty sure it is correct.
+
+Usage:
+#+begin_src bash :exports both
+noweb=":lost 4 8 15 16 23 42 :last"
+<<load-noweb()>>
+
+for param in lost last least
+do
+    valued $param && echo $param is defined to "\`${!param}\`"
+    empty $param && echo $param is empty
+    ! declared $param && echo $param was not declared
+done
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+lost is defined to `4 8 15 16 23 42`
+last is empty
+least was not declared
+#+end_src
+
+** Conclusion
+
+As mentioned before, this variable definition mechanism does not replace but rather bypasses arguments parsing.
+It is only a way to define arbitrary variables from a string, which can be transmitted from outside the script.
+It does not verify anything and does not generate errors by itself.
+
+It could also have been implemented with a more standard syntax, like =argument=va lue, other=23= or without the comma =argument=va lue other=23=, but I much prefer =:argument va lue :other 23=.
