@@ -1,4 +1,6 @@
 #+title: Pandoc filters for org documents
+#+author: mooss
+
 #+property: header-args :wrap "src text :minipage" :eval no-export :noweb no-export :results output drawer
 
 * Prelude
