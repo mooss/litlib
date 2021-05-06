@@ -486,6 +486,93 @@ heya
 #+end_src
 
 
+* Comment noweb inclusion in bash scripts
+
+Noweb inclusion in bash code blocks breaks because of the =<<...>>= syntax.
+To alleviate this, the filter implemented here can be used to add a comment before noweb inclusions.
+
+** Analysis
+
+#+name: bash-code-block-analysis
+#+begin_src org :noweb no
+,#+begin_src bash
+<<breaks syntax>>
+echo "line1"
+<<other code block>>
+,#+end_src
+#+end_src
+
+#+Call: pandoc-json("bash-code-block-analysis") :wrap "src js :minipage"
+
+#+RESULTS:
+#+begin_src js :minipage
+{
+   "blocks" : [
+      {
+         "c" : [
+            [
+               "",
+               [
+                  "bash"
+               ],
+               []
+            ],
+            "<<breaks syntax>>\necho \"line1\"\n<<other code block>>\n"
+         ],
+         "t" : "CodeBlock"
+      }
+   ],
+   "meta" : {},
+   "pandoc-api-version" : [
+      1,
+      22
+   ]
+}
+#+end_src
+
+
+** Implementation
+
+In lua pattern syntax, =%C= is all the non control characters.
+It is used here to mean basically anything but =\n= (we don't care much for special characters within noweb inclusions).
+
+#+name: comment-noweb-in-bash
+#+begin_src lua :noweb no
+function CodeBlock(block)
+   if languageof(block) == 'bash' then
+      block.text = string.gsub(
+         block.text,
+         '(<<%C+>>)',
+         '# %1'
+      )
+   end
+   return block
+end
+#+end_src
+#+depends:comment-noweb-in-bash :noweb languageof
+#+tangle:comment-noweb-in-bash filters/comment-noweb-in-bash.lua
+
+The pattern =(<<%C+>>)= is very simple and might eventually break.
+In this instance I prefer not to think too hard about the best way possible to implement this, but rather to come back and fix it should it break.
+
+
+** Test
+
+This filter successfully adds comments before noweb inclusions:
+#+Call: pandoc("bash-code-block-analysis", "--lua-filter filters/comment-noweb-in-bash.lua") :wrap "src org :minipage"
+
+#+RESULTS:
+#+begin_src org :minipage
+,#+begin_src shell
+  # <<breaks syntax>>
+  echo "line1"
+  # <<other code block>>
+,#+end_src
+#+end_src
+
+Don't pay attention to the spaces prefixing each line, they were added by pandoc.
+
+
 * Lua support library
 
 In this section are gathered some functions made to help me write pandoc filters.
@@ -827,3 +914,63 @@ test_tokenise('Things are "becoming \\"tricky\\"", as they say"')
 #+end_src
 
 
+** Pandoc utils
+
+Where the previous sections were dedicated to generic utilities, this section is specialised in manipulating pandoc's ast types.
+
+*** Get a code block's language
+
+#+name: languageof
+#+begin_src lua
+local function languageof(block)
+   assert(block.tag == 'CodeBlock', 'expected a CodeBlock')
+   return block.classes[1]
+end
+#+end_src
+
+For reference, here is what pandoc's representation of a single C++ code block looks like.
+#+name: c++-code-block-example
+#+begin_src org :noweb no
+,#+begin_src cpp :eval no-export :exports both
+int sum() {
+    return 108;
+}
+,#+end_src
+#+end_src
+
+#+Call: pandoc-json("c++-code-block-example") :wrap "src js :minipage"
+
+#+RESULTS:
+#+begin_src js :minipage
+{
+   "blocks" : [
+      {
+         "c" : [
+            [
+               "",
+               [
+                  "cpp"
+               ],
+               [
+                  [
+                     "eval",
+                     "no-export"
+                  ],
+                  [
+                     "exports",
+                     "both"
+                  ]
+               ]
+            ],
+            "int sum() {\n    return 108;\n}\n"
+         ],
+         "t" : "CodeBlock"
+      }
+   ],
+   "meta" : {},
+   "pandoc-api-version" : [
+      1,
+      22
+   ]
+}
+#+end_src
