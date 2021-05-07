@@ -267,3 +267,51 @@ true
 Exit status is non zero (1):
 false.
 #+end_src
+
+
+* Other utilities
+
+** Capture =stderr=
+
+This small helper saves the output of a command inside the variable =$stderr=.
+#+name: capture_stderr
+#+begin_src bash :minipage
+function capture_stderr() {
+    buffer=$(mktemp)
+    $@ 2> "$buffer"
+    stderr=$(cat "$buffer")
+    rm "$buffer"
+}
+#+end_src
+
+Usage:
+#+begin_src bash :exports both :minipage
+<<capture_stderr>>
+function error_prone() {
+    echo 'Everything is well.'
+    >&2 echo 'Terrible things are happening.'
+    echo 'Progress is steady.'
+    >&2 echo 'I must have broken a mirror.'
+    echo 'Almost done.'
+    >&2 echo 'Oh my god ITS ALIVE!'
+}
+
+echo stdout:
+capture_stderr error_prone
+echo
+echo stderr:
+echo "$stderr"
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+stdout:
+Everything is well.
+Progress is steady.
+Almost done.
+
+stderr:
+Terrible things are happening.
+I must have broken a mirror.
+Oh my god ITS ALIVE!
+#+end_src
