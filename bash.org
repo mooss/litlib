@@ -57,6 +57,7 @@ echo "'$last'"
 '108'
 #+end_src
 
+
 ** "Parsing" (=sedrex=)
 
 =sedrex=, the "parsing" function associated to =noweb_load= will be explained line by line.
@@ -135,12 +136,35 @@ last=NULL
 
 #+end_src
 
-** Predicates
+
+** Conclusion
+
+As mentioned before, this variable definition mechanism does not replace but rather bypasses arguments parsing.
+It could have been implemented with a more standard syntax, like =argument=va lue, other=23= or without the comma =argument=va lue other=23=, but I much prefer =:argument va lue :other 23=.
+
+It is only a way to define arbitrary variables from a string, which can be transmitted from outside the script.
+It does not verify anything and does not generate errors by itself.
+Tools to perform some amount of verification and error handling are discussed in the next section.
+
+
+* Noweb suite
+
+Where the previous section laid out the bases of an argument processing system by establishing a mechanism allowing to easily define variables, this one builds upon it with tools to manipulate those variables.
+
+=noweb-suite= follows the same logic as =load-noweb= of using the include script to handle dependencies:
+#+name: noweb-suite
+#+begin_src bash :minipage
+./include.pl bash.org ':noweb noweb-suite-impl'
+#+end_src
+
+#+depends:noweb-suite-impl :noweb load-noweb-impl
+
+** Predicates on indirected variables
 
 =declared=, =empty= and =valued= are using indirection to test against the value of the variable whose name is contained in their first argument.
-For example, if =$lost= is =4 8 15 16 23 42=, when =defined lost= is called, the value of =$1= is the string ~"lost"~, therefore the value of ="${!1}"= is the string =4 8 15 16 23 42=.
+For example, if =$lost= is =4 8 15 16 23 42= when =defined lost= is called, the value of =$1= is the string ~"lost"~ and by indirection the value of ="${!1}"= is the value of =$lost= (=4 8 15 16 23 42=).
 
-#+begin_src bash :noweb-ref load-noweb-impl :minipage
+#+begin_src bash :noweb-ref noweb-suite-impl :minipage
 function declared() {
     test -n "${!1}"
 }
@@ -151,12 +175,12 @@ function valued() {
     declared $1 && ! empty $1
 }
 #+end_src
-Pandoc's syntax highlighting doesn't like this ="${!1}"=, but in practice i'm pretty sure it is correct.
+Pandoc's syntax highlighting doesn't like this ="${!1}"= syntax, but in practice i'm pretty sure it is correct.
 
 Usage:
 #+begin_src bash :exports both :minipage
 noweb=":lost 4 8 15 16 23 42 :last"
-<<load-noweb()>>
+<<noweb-suite()>>
 
 for param in lost last least
 do
@@ -173,10 +197,4 @@ last is empty
 least was not declared
 #+end_src
 
-** Conclusion
 
-As mentioned before, this variable definition mechanism does not replace but rather bypasses arguments parsing.
-It is only a way to define arbitrary variables from a string, which can be transmitted from outside the script.
-It does not verify anything and does not generate errors by itself.
-
-It could also have been implemented with a more standard syntax, like =argument=va lue, other=23= or without the comma =argument=va lue other=23=, but I much prefer =:argument va lue :other 23=.
