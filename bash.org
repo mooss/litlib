@@ -198,3 +198,72 @@ least was not declared
 #+end_src
 
 
+** Assertions
+
+*** =assert=
+
+Assertion are implemented as a very simple function executing its argument and exiting with an error message shoud this execution return an error.
+#+begin_src bash :noweb-ref noweb-suite-impl :minipage
+function assert() {
+    if ! $@
+    then
+        echo "Assertion failed: \`$@\`."
+        exit
+    fi
+}
+#+end_src
+Notes:
+ - The error message is not printed to =stderr=, because Org mode results only include =stdin=.
+ - No error code is sent with =exit=, because it would cause an error message in a popup and empty results.
+   I much prefer when everything is included in the results.
+
+Usage:
+#+begin_src bash :exports both :minipage
+noweb=":lost 4 8 15 16 23 42 :last"
+<<noweb-suite()>>
+assert declared lost
+echo lost is declared
+assert empty lost
+echo lost is empty
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+lost is declared
+Assertion failed: `empty lost`.
+#+end_src
+
+*** =assert_no_error=
+
+This hardcoded assertion uses =$?= to verify that the last command did not result in an error.
+It can take a message because I know of no way to get the last command called so in case of multiple =assert_no_error=, the one that failed would be less obvious.
+
+A newline is added before the exit message because it is susceptible to span multiple lines.
+
+#+begin_src bash :noweb-ref noweb-suite-impl :minipage
+function assert_no_error() {
+    status=$?
+    if test $status -ne 0
+    then
+        echo "Exit status is non zero ($status):
+$@."
+        exit
+    fi
+}
+#+end_src
+
+Usage:
+#+begin_src bash :exports both :minipage
+<<noweb-suite()>>
+true
+assert_no_error true
+false
+assert_no_error false
+true
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+Exit status is non zero (1):
+false.
+#+end_src
