@@ -14,7 +14,7 @@ This section presents an awesome hack that can be used to somewhat bypass argume
 The trick is to use the noweb arguments syntax to initialise variables.
 The code block below will parse the noweb variables inside the =$noweb= variable and instantiate them.
 It was not made into a function because I failed to make the =declare='d variables escape the function scope.
-#+begin_src bash :eval never :minipage :noweb-ref load-noweb-impl
+#+begin_src bash :eval never :noweb-ref load-noweb-impl :minipage
 if [ -n "$noweb" ]
 then
     while IFS= read -r -d $'\0' definition
@@ -42,7 +42,7 @@ Because this noweb-loading code block has dependencies, they must be resolved vi
 ** Basic usage
 
 A bash variable called =noweb= containing a noweb-style variables definition must be placed before the call to the loading block.
-#+begin_src bash :minipage :exports both
+#+begin_src bash :exports both :minipage
 noweb=":first 6 :lost 4 8 15 16 23 42 :last 108"
 <<load-noweb()>>
 echo "'$first'"
@@ -121,7 +121,7 @@ Here is the promised line-by-line breakdown of =sedrex=:
 
 
 Here is an illustration of what =sedrex= does:
-#+begin_src bash :minipage :exports both
+#+begin_src bash :exports both :minipage
 <<sedrex>>
 echo ":lost 4 8 15 16 23 42 :last"\
     | sedrex\
@@ -154,7 +154,7 @@ function valued() {
 Pandoc's syntax highlighting doesn't like this ="${!1}"=, but in practice i'm pretty sure it is correct.
 
 Usage:
-#+begin_src bash :exports both
+#+begin_src bash :exports both :minipage
 noweb=":lost 4 8 15 16 23 42 :last"
 <<load-noweb()>>
 
