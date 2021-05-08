@@ -313,8 +313,8 @@ Pandoc ast shows that the block is included as-is inside an org =RawBlock=:
 
 Most of the work is done by =tokenise= (from the support library).
 The bulk of the processing shown here is a slight tweaking of the output.
-The call is defined as Python code in order to have syntactic coloration on the strings.
-It will probably need some adjustments to avoid conflicting with Python's keywords.
+The called function is defined as verbatim code.
+# Using Python for syntactic coloration is great but the generated pdf does not wrap long lines.
 
 #+name: noweb-call
 #+begin_src lua
@@ -336,7 +336,7 @@ function RawBlock(block)
          return {pandoc.Para({
                        pandoc.Strong('Call to'),
                        pandoc.Space(),
-                       pandoc.Code(call .. '):', {'', {'python'}})
+                       pandoc.Code(call .. '):', {'', {'verbatim'}})
          })}
       end
    end
