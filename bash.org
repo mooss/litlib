@@ -60,7 +60,7 @@ echo "'$last'"
 
 ** "Parsing" (=sedrex=)
 
-=sedrex=, the "parsing" function associated to =noweb_load= will be explained line by line.
+=sedrex=, the "parsing" function associated to =noweb-load= will be explained line by line.
 It kinda looks like an asymmetrical spaceship, a sideways evil throne or the emerging city of Atlantis.
 # Poseidon, Ancient tyrant ruling the ocean of space.
 #+name: sedrex
