@@ -206,14 +206,12 @@ true # Might exit with an error otherwise and cancel everything.
 #+end_src
 
 
-The implementation of this feature is splitted between =gen-qualified-impl= and =gen-qualified=.
-=gen-qualified='s role is to define variables local to the current file (=source= and =litlib=).
-This way, other files will be able to define their own gen-qualified[fn::The notion of file-local named code blocks remains to be implemented in =include.pl=.].
+The implementation of this feature is splitted between =gen-qualified-impl= and =gen-qualified= because =gen-qualified='s role is to define variables that are local to the current file (=source= and =litlib=).
+This way, other files will be able to define their own =gen-qualified= through =gen-qualified-impl=[fn::The notion of file-local named code blocks remains to be implemented in =include.pl=.].
 
 #+Name: gen-qualified
 #+begin_src bash :var noweb="" :results raw
-noweb=":source cpp.org :sink $noweb"
-litlib='.'
+noweb=":source cpp.org :litlib . :sink $noweb"
 <<generic-include("cpp.org bash.org", ":noweb gen-qualified-impl")>>
 #+end_src
 
