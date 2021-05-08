@@ -152,15 +152,20 @@ This section proposes a very simple syntax to define a const and a non const ver
 
 Tools from =bash.org= are relied upon for the implementation.
 
+Default parameters are defined separately to make them appear before the instantiation of =$noweb= into bash variables:
+#+name: gen-qualified-default-params
+#+begin_src bash
+noweb=":pre Generated :lvl ** :sink $noweb"
+#+end_src
+
 Verification of the parameters and of the source:
 #+begin_src bash :noweb-ref gen-qualified-impl :minipage
-noweb=":pre Generated :lvl ** :sink $noweb"
 assert_chain valued litlib source name noweb_ref
 
 source_block=$($litlib/include.pl "$source" ":noweb $name")
 assert_no_error "Errors in include script:\n$source_block"
 #+end_src
-#+depends:gen-qualified-impl :noweb noweb-suite-impl
+#+depends:gen-qualified-impl :noweb gen-qualified-default-params noweb-suite-impl
 
 =const= and =non_const= are destined to be used as the argument of =cpp= to generate the codeblock and the corresponding subsection, if pertinent:
 #+begin_src bash :noweb-ref gen-qualified-impl :minipage
