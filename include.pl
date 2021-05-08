@@ -29,10 +29,17 @@ use File::Basename;
 ###################
 # Early functions #
 ###################
+my $exit_code = 0;
+# Proper arguments parsing is bypassed for this particular argument because the error
+# is susceptible to be used before the arguments are parsed.
+if($ARGV[1] =~ /:exit-with-error/) {
+    $exit_code = 23;
+}
+
 sub stop {
     my $msg = shift;
     say '#error "' . $msg . '"';
-    exit();
+    exit($exit_code);
 }
 
 sub comment {

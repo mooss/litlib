@@ -162,7 +162,7 @@ Verification of the parameters and of the source:
 #+begin_src bash :noweb-ref gen-qualified-impl :minipage
 assert_chain valued litlib source name noweb_ref
 
-source_block=$($litlib/include.pl "$source" ":noweb $name")
+source_block=$($litlib/include.pl "$source" ":exit-with-error :noweb $name")
 assert_no_error "Errors in include script:\n$source_block"
 #+end_src
 #+depends:gen-qualified-impl :noweb gen-qualified-default-params noweb-suite-impl
