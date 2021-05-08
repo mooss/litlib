@@ -1480,13 +1480,6 @@ struct segstorage {
     static constexpr std::size_t segment_size = SegmentSize;
     Storage storage;
 
-    auto operator[](std::size_t index) {
-        return std::span<value_type, SegmentSize>(
-            storage.data() + SegmentSize * index,
-            SegmentSize
-        );
-    }
-
     std::size_t size() const;
 
     <<segstorage/public>>
@@ -1494,10 +1487,87 @@ struct segstorage {
 #+end_src
 #+depends:segstorage :cpp span
 
+*** Indexing
+
+A =segstorage= can be indexed, with =std::span= being used to represent individual segments.
+
+#+begin_src cpp :noweb-ref segstorage/qualified_generation
+auto operator[](std::size_t index) Q__{
+    return std::span<Q__value_type, SegmentSize>(
+        storage.data() + SegmentSize * index,
+        SegmentSize
+    );
+}
+#+end_src
+
 *** Iteration
 
-The iterator only has the bare minimum required to be usable in a range-based for loop.
+The iterators only have the bare minimum required to be usable in a range-based for loop.
+
+#+begin_src cpp :noweb-ref segstorage/qualified_generation
+struct Q_iterator {
+    Q__value_type* ptr;
+    Q_iterator& operator++() {
+        ptr += SegmentSize;
+        return *this;
+    }
+
+    auto operator*() {
+        return std::span<value_type, SegmentSize>(ptr, SegmentSize);
+    }
+
+    bool operator!=(const Q_iterator& other) {
+        return other.ptr != ptr;
+    }
+};
+Q_iterator begin() Q__{return Q_iterator{storage.data()};}
+Q_iterator end() Q__{return Q_iterator{storage.data() + storage.size()};}
+#+end_src
+
+*** Qualified code generation
+
+The two previous sections used qualified syntax to make it possible to generate const and non const versions:
+#+Call: gen-qualified(":name segstorage/qualified_generation :noweb_ref segstorage/public :pre :both :lvl ***") :results raw
+
+#+RESULTS:
+
+**** =segstorage/public= const
+
 #+begin_src cpp :noweb-ref segstorage/public :minipage
+auto operator[](std::size_t index) const {
+    return std::span<const value_type, SegmentSize>(
+        storage.data() + SegmentSize * index,
+        SegmentSize
+    );
+}
+struct const_iterator {
+    const value_type* ptr;
+    const_iterator& operator++() {
+        ptr += SegmentSize;
+        return *this;
+    }
+
+    auto operator*() {
+        return std::span<value_type, SegmentSize>(ptr, SegmentSize);
+    }
+
+    bool operator!=(const const_iterator& other) {
+        return other.ptr != ptr;
+    }
+};
+const_iterator begin() const {return const_iterator{storage.data()};}
+const_iterator end() const {return const_iterator{storage.data() + storage.size()};}
+#+end_src
+
+**** =segstorage/public= non_const
+
+#+begin_src cpp :noweb-ref segstorage/public :minipage
+auto operator[](std::size_t index) {
+    return std::span<value_type, SegmentSize>(
+        storage.data() + SegmentSize * index,
+        SegmentSize
+    );
+}
 struct iterator {
     value_type* ptr;
     iterator& operator++() {
