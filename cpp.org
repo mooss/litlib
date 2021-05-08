@@ -2022,6 +2022,128 @@ Alternatively, a scoped object could be passed to observe alongside the observer
 This might actually be more convenient at the call site.
 
 
+** Linear interpolation
+
+This utility can be used to interpolate values linearly between several data points.
+It was conceived with color gradient creation via a =segstorage= in mind, but it might eventually prove useful for other things.
+
+#+name: linear_interpolation
+#+begin_src cpp :minipage
+template<typename SegmentedStorage>
+struct linear_interpolation {
+    using value_type = SegmentedStorage::value_type;
+    static constexpr std::size_t segment_size = SegmentedStorage::segment_size;
+    using data_point = std::span<value_type, segment_size>;
+
+    SegmentedStorage storage;
+
+    <<linear_interpolation/public>>
+};
+#+end_src
+#+depends:linear_interpolation :noweb min :cpp span cmath
+
+*** Fill with interpolation
+
+The =fill= function expects a =progress= parameter between 0 and 1, representing the point from which the value should be interpolated.
+#+begin_src cpp :noweb-ref linear_interpolation/public :minipage
+void fill(data_point destination, float progress) const {
+    auto intervals = storage.size() - 1;
+    float remainder = progress * intervals;
+
+    std::size_t left = min<std::size_t>(std::floor(remainder), intervals);
+    std::size_t right = left + 1;
+    if(right >= storage.size())
+        right = 0;
+    remainder -= left;
+
+    for(std::size_t i = 0; i < segment_size; ++i) {
+        destination[i] = storage[left][i] * (1 - remainder) + storage[right][i] * remainder;
+    }
+}
+#+end_src
+
+This overload represents =progress= as a number of steps:
+#+begin_src cpp :noweb-ref linear_interpolation/public :minipage
+void fill(data_point destination, std::size_t current, std::size_t steps) const {
+    fill(destination, static_cast<float>(current) / static_cast<float>(steps - 1));
+}
+#+end_src
+
+=fill_all= can fill a whole container of segments with interpolated values:
+#+begin_src cpp :noweb-ref linear_interpolation/public :minipage
+template<typename OtherStorage>
+void fill_all(OtherStorage& destination) const {
+    for(std::size_t i = 0; i < destination.size(); ++i) {
+        fill(destination[i], i, destination.size());
+    }
+}
+#+end_src
+
+*** Color alias
+
+It is a bit simplistic to assume a float representation but this will be enough for an OpenGL usage.
+
+#+name: rgb_interpolation
+#+begin_src cpp :minipage
+template<template<typename, std::size_t, std::size_t> class Support, std::size_t Size>
+using rgb_interpolation = linear_interpolation<Support<float, Size, 3>>;
+#+end_src
+#+depends:rgb_interpolation :noweb linear_interpolation
+
+*** Usage
+
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb rgb_interpolation segarray print <<span <<array")>>
+
+int main() {
+    print{"Red to green to blue:"};
+    rgb_interpolation<segarray, 3> rgb_gradient{
+        1, 0, 0, // r
+        0, 1, 0, // g
+        0, 0, 1  // b
+    };
+    segarray<float, 15, 3> rgb_dest;
+    rgb_gradient.fill_all(rgb_dest);
+    for(const auto& color: rgb_dest)
+        print{color};
+
+    print{};
+    print{"Red:"};
+    rgb_interpolation<segarray, 1> r_nongradient{1, 0, 0};
+    segarray<float, 4, 3> r_dest;
+    r_nongradient.fill_all(r_dest);
+    for(const auto& color: r_dest)
+        print{color};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+Red to green to blue:
+[1, 0, 0]
+[0.857143, 0.142857, 0]
+[0.714286, 0.285714, 0]
+[0.571429, 0.428571, 0]
+[0.428571, 0.571429, 0]
+[0.285714, 0.714286, 0]
+[0.142857, 0.857143, 0]
+[0, 1, 0]
+[0, 0.857143, 0.142857]
+[0, 0.714286, 0.285714]
+[0, 0.571429, 0.428571]
+[0, 0.428571, 0.571429]
+[0, 0.285714, 0.714286]
+[0, 0.142857, 0.857143]
+[0, 0, 1]
+
+Red:
+[1, 0, 0]
+[1, 0, 0]
+[1, 0, 0]
+[1, 0, 0]
+#+end_src
+
+
 * Cool tricks (don't try this at home)
 
 This section is dedicated to weird C++ voltige.
