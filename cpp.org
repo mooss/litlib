@@ -292,7 +292,7 @@ my %flags = %{extract_parameters $args};
 
 sub take_all {
     my $what = shift;
-    return @{ delete($flags{$what}) // []};
+    return @{delete($flags{$what}) // []};
 }
 
 sub format_array {
