@@ -4,9 +4,12 @@
 
 #+property: header-args :wrap "src text :minipage"
 #+property: header-args:cpp+ :eval never :main no :flags -std=c++20 -Wall -Werror :noweb no-export
+#+property: header-args:bash+ :noweb no-export
 #+options: ^:nil
 
 * Prelude
+
+** Include script
 
 Mandatory include block to be able to execute examples:
 #+name: include
@@ -15,10 +18,21 @@ Mandatory include block to be able to execute examples:
 #+end_src
 
 
+** Generic include script
+
+Like =include= above, but without predefined values.
+#+name: generic-include
+#+begin_src bash :var sources="" args=""
+./include.pl "$sources" "$args"
+#+end_src
+
+
 * Code generation
 :PROPERTIES:
 :header-args:
 :END:
+
+** =Pycgen= and =Pyogen=
 
 The class =Pycgen= (Python C++ generator) uses the concept of context managers to help with the task of generating C++ code in python.
 # {
@@ -125,6 +139,113 @@ If that is the case, the only thing to do is to disable it at the section level,
 :PROPERTIES:
 :header-args:
 :END:
+#+end_src
+
+
+** Const and non-const generation
+
+A reccurent source of frustration for me in C++ is the fact that sometimes code must be duplicated to offer a const and non const version of a same function.
+This section proposes a very simple syntax to define a const and a non const version of the same function, based on the replacement of two symbols:
+| Symbol  | const replacement | non const replacement |
+|---------+-------------------+-----------------------|
+| *=Q__=* | ="const "=        | =""=                  |
+| *=Q_=*  | ="const_"=        | =""=                  |
+
+Tools from =bash.org= are relied upon for the implementation.
+
+Verification of the parameters and of the source:
+#+begin_src bash :noweb-ref gen-qualified-impl :minipage
+noweb=":pre Generated :lvl ** :sink $noweb"
+assert_chain valued litlib source name noweb_ref
+
+source_block=$($litlib/include.pl "$source" ":noweb $name")
+assert_no_error "Errors in include script:\n$source_block"
+#+end_src
+#+depends:gen-qualified-impl :noweb noweb-suite-impl
+
+=const= and =non_const= are destined to be used as the argument of =cpp= to generate the codeblock and the corresponding subsection, if pertinent:
+#+begin_src bash :noweb-ref gen-qualified-impl :minipage
+function const() {
+    echo "$source_block" | sed -r -e 's/Q__/const /g' -e 's/Q_/const_/g'
+}
+
+function non_const() {
+    echo "$source_block" | sed -r 's/Q__?//g'
+}
+
+if declared cb_args
+then # Can be used to apply parameters to the generated code blocks, with ; instead of :.
+    cb_args=$(echo " $cb_args" | tr ';' ':')
+else
+    cb_args=' :minipage'
+fi
+
+function cpp() {
+    echo; valued lvl && echo "*$lvl =$name= $1"; echo
+    echo "#+begin_src cpp :noweb-ref $noweb_ref$cb_args"
+    $1
+    echo "#+end_src"
+}
+#+end_src
+
+Only the printing remains:
+#+begin_src bash :noweb-ref gen-qualified-impl :minipage
+valued lvl && valued pre && echo "$lvl $pre"
+
+if declared both
+then
+    const=1; non_const=1
+fi
+declared const && cpp const
+declared non_const && cpp non_const
+true # Might exit with an error otherwise and cancel everything.
+#+end_src
+
+
+The implementation of this feature is splitted between =gen-qualified-impl= and =gen-qualified=.
+=gen-qualified='s role is to define variables local to the current file (=source= and =litlib=).
+This way, other files will be able to define their own gen-qualified[fn::The notion of file-local named code blocks remains to be implemented in =include.pl=.].
+
+#+Name: gen-qualified
+#+begin_src bash :var noweb="" :results raw
+noweb=":source cpp.org :sink $noweb"
+litlib='.'
+<<generic-include("cpp.org bash.org", ":noweb gen-qualified-impl")>>
+#+end_src
+
+# TODO: Implement local code blocks in include.pl, i.e. #+Name: means that the code block is loaded only if it is found in the local files (the first from the file list).
+# This will allow to have gen-qualified in other files that include cpp.org without triggering a duplicated code block error.
+
+*** Usage
+
+A block using the =Q__= and =Q_= syntax must be defined:
+#+name: qualified-example-impl
+#+begin_src cpp
+Q__int& Q_get_x() Q__{
+    return x;
+}
+#+end_src
+
+
+Calling =gen-qualified= with this block as =:name= generates the desired const and non-const versions, using the same =noweb-ref=.
+#+Call: gen-qualified(":name qualified-example-impl :lvl *** :pre :both :noweb_ref get_x_example :cb_args ;minipage ;custom-param")
+
+#+RESULTS:
+
+**** =qualified-example-impl= const
+
+#+begin_src cpp :noweb-ref get_x_example :minipage :custom-param
+const int& const_get_x() const {
+    return x;
+}
+#+end_src
+
+**** =qualified-example-impl= non_const
+
+#+begin_src cpp :noweb-ref get_x_example :minipage :custom-param
+int& get_x() {
+    return x;
+}
 #+end_src
 
 
