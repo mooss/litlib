@@ -1467,10 +1467,10 @@ print_inc_int 23
 #+end_src
 
 
-** Segmented container
+** Segmented storage
 
 A =segstorage= is contiguous and can be manipulated as a container of segments of constant size rather than as a container of individual values.
-It must therefore maintain an important invariant, ; the size of its underlying storage must always be a multiple of the size of its segments.
+It must therefore maintain an important invariant, the size of its underlying storage must always be a multiple of the size of its segments.
 
 #+name: segstorage
 #+begin_src cpp :minipage
