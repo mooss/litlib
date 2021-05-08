@@ -277,6 +277,37 @@ Exit status is non zero (1):
 false.
 #+end_src
 
+*** Assert chain
+
+Applies an assertion to several parameters.
+
+#+begin_src bash :noweb-ref noweb-suite-impl :minipage
+function assert_chain() {
+    predicate="$1"; shift
+    while test $# -ge 1
+    do
+        assert $predicate $1; shift
+    done
+}
+#+end_src
+
+Usage:
+#+begin_src bash
+noweb=":four :eight :sixteen 16"
+<<noweb-suite()>>
+assert_chain declared four eight sixteen
+echo All are defined.
+assert_chain empty four eight sixteen
+echo All are empty.
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+All are defined.
+Assertion failed: `empty sixteen`.
+#+end_src
+
+
 
 * Other utilities
 
