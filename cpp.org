@@ -758,6 +758,16 @@ print{a};
     #+end_src
     So my guideline would be to use braces when using the default formatting and parens when using custom formatting.
 
+*** Shortcuts
+
+A printer without separator or end.
+=out(whatever);= behaves the same as =std::cout << whatever;= but I prefer to use the first one.
+#+name: out
+#+begin_src cpp
+print out{{.sep="", .end=""}};
+#+end_src
+#+depends:out :noweb print
+
 
 ** Log function calls
 
