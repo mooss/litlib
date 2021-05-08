@@ -181,7 +181,7 @@ else
 fi
 
 function cpp() {
-    echo; valued lvl && echo "*$lvl =$name= $1"; echo
+    echo; valued lvl && echo "*$lvl =$noweb_ref= $1"; echo
     echo "#+begin_src cpp :noweb-ref $noweb_ref$cb_args"
     $1
     echo "#+end_src"
@@ -232,7 +232,7 @@ Calling =gen-qualified= with this block as =:name= generates the desired const a
 
 #+RESULTS:
 
-**** =qualified-example-impl= const
+**** =get_x_example= const
 
 #+begin_src cpp :noweb-ref get_x_example :minipage :custom-param
 const int& const_get_x() const {
@@ -240,7 +240,7 @@ const int& const_get_x() const {
 }
 #+end_src
 
-**** =qualified-example-impl= non_const
+**** =get_x_example= non_const
 
 #+begin_src cpp :noweb-ref get_x_example :minipage :custom-param
 int& get_x() {
