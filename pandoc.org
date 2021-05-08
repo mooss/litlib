@@ -120,10 +120,10 @@ In the metadata is enclosed all the information needed (the value of =minipage=)
 
 *** Target code block
 
-#+Call: pandoc-json("minipage-embedded-latex") :wrap "src js :minipage"
+#+Call: pandoc-json("minipage-embedded-latex") :wrap "src js"
 
 #+RESULTS:
-#+begin_src js :minipage
+#+begin_src js
 {
    "blocks" : [
       {
@@ -249,10 +249,10 @@ In particular, the name of the code block and its arguments should be exported, 
 #+end_src
 
 Pandoc ast shows that the block is included as-is inside an org =RawBlock=:
-#+Call: pandoc-json("noweb-call-analysis") :wrap "src js :minipage"
+#+Call: pandoc-json("noweb-call-analysis") :wrap "src js"
 
 #+RESULTS:
-#+begin_src js :minipage
+#+begin_src js
 {
    "blocks" : [
       {
@@ -437,10 +437,10 @@ heya
 ,#+end_src
 #+end_src
 
-#+Call: pandoc-json("silenced-call-directive-fixed") :wrap "src js :minipage"
+#+Call: pandoc-json("silenced-call-directive-fixed") :wrap "src js"
 
 #+RESULTS:
-#+begin_src js :minipage
+#+begin_src js
 {
    "blocks" : [
       {
