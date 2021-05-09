@@ -1488,6 +1488,7 @@ template<typename Storage, std::size_t SegmentSize>
 struct segstorage {
     using value_type = Storage::value_type;
     static constexpr std::size_t segment_size = SegmentSize;
+    using segment_type = std::span<value_type, segment_size>;
     Storage storage;
 
     std::size_t size() const;
@@ -2033,7 +2034,7 @@ template<typename SegmentedStorage>
 struct linear_interpolation {
     using value_type = SegmentedStorage::value_type;
     static constexpr std::size_t segment_size = SegmentedStorage::segment_size;
-    using data_point = std::span<value_type, segment_size>;
+    using data_point = SegmentedStorage::segment_type;
 
     SegmentedStorage storage;
 
