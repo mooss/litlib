@@ -1523,6 +1523,11 @@ struct Q_iterator {
         return *this;
     }
 
+    Q_iterator& operator+(std::size_t offset) {
+        ptr += offset * SegmentSize;
+        return *this;
+    }
+
     auto operator*() {
         return std::span<value_type, SegmentSize>(ptr, SegmentSize);
     }
@@ -1558,6 +1563,11 @@ struct const_iterator {
         return *this;
     }
 
+    const_iterator& operator+(std::size_t offset) {
+        ptr += offset * SegmentSize;
+        return *this;
+    }
+
     auto operator*() {
         return std::span<value_type, SegmentSize>(ptr, SegmentSize);
     }
@@ -1583,6 +1593,11 @@ struct iterator {
     value_type* ptr;
     iterator& operator++() {
         ptr += SegmentSize;
+        return *this;
+    }
+
+    iterator& operator+(std::size_t offset) {
+        ptr += offset * SegmentSize;
         return *this;
     }
 
@@ -2103,18 +2118,23 @@ int main() {
         0, 1, 0, // g
         0, 0, 1  // b
     };
-    segarray<float, 15, 3> rgb_dest;
+    segarray<float, 9, 3> rgb_dest;
     rgb_gradient.fill_all(rgb_dest);
     for(const auto& color: rgb_dest)
         print{color};
 
-    print{};
-    print{"Red:"};
+    print{"\nRed:"};
     rgb_interpolation<segarray, 1> r_nongradient{1, 0, 0};
     segarray<float, 4, 3> r_dest;
     r_nongradient.fill_all(r_dest);
     for(const auto& color: r_dest)
         print{color};
+
+    print{"\nPointer arithmetic:"};
+    auto ptr = rgb_dest.begin();
+    print{"rbg first:", *ptr, "==", rgb_dest[0]};
+    ptr = ptr + 4;
+    print{"rgb fifth:", *ptr, "==", rgb_dest[4]};
 }
 #+end_src
 
@@ -2122,19 +2142,13 @@ int main() {
 #+begin_src text :minipage
 Red to green to blue:
 [1, 0, 0]
-[0.857143, 0.142857, 0]
-[0.714286, 0.285714, 0]
-[0.571429, 0.428571, 0]
-[0.428571, 0.571429, 0]
-[0.285714, 0.714286, 0]
-[0.142857, 0.857143, 0]
+[0.75, 0.25, 0]
+[0.5, 0.5, 0]
+[0.25, 0.75, 0]
 [0, 1, 0]
-[0, 0.857143, 0.142857]
-[0, 0.714286, 0.285714]
-[0, 0.571429, 0.428571]
-[0, 0.428571, 0.571429]
-[0, 0.285714, 0.714286]
-[0, 0.142857, 0.857143]
+[0, 0.75, 0.25]
+[0, 0.5, 0.5]
+[0, 0.25, 0.75]
 [0, 0, 1]
 
 Red:
@@ -2142,6 +2156,10 @@ Red:
 [1, 0, 0]
 [1, 0, 0]
 [1, 0, 0]
+
+Pointer arithmetic:
+rbg first: [1, 0, 0] == [1, 0, 0]
+rgb fifth: [0, 1, 0] == [0, 1, 0]
 #+end_src
 
 
