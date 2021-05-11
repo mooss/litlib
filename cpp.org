@@ -1513,7 +1513,9 @@ auto operator[](std::size_t index) Q__{
 
 *** Iteration
 
-The iterators only have the bare minimum required to be usable in a range-based for loop.
+The iterators have:
+ - The bare minimum required to be usable in a range-based for loop (=++=, =*= and =!==).
+ - Pointer addition (=+=).
 
 #+begin_src cpp :noweb-ref segstorage/qualified_generation
 struct Q_iterator {
@@ -1523,17 +1525,17 @@ struct Q_iterator {
         return *this;
     }
 
+    auto operator*() const {
+        return std::span<Q__value_type, SegmentSize>(ptr, SegmentSize);
+    }
+
+    bool operator!=(const Q_iterator& other) const {
+        return other.ptr != ptr;
+    }
+
     Q_iterator& operator+(std::size_t offset) {
         ptr += offset * SegmentSize;
         return *this;
-    }
-
-    auto operator*() {
-        return std::span<value_type, SegmentSize>(ptr, SegmentSize);
-    }
-
-    bool operator!=(const Q_iterator& other) {
-        return other.ptr != ptr;
     }
 };
 Q_iterator begin() Q__{return Q_iterator{storage.data()};}
@@ -1563,17 +1565,17 @@ struct const_iterator {
         return *this;
     }
 
+    auto operator*() const {
+        return std::span<const value_type, SegmentSize>(ptr, SegmentSize);
+    }
+
+    bool operator!=(const const_iterator& other) const {
+        return other.ptr != ptr;
+    }
+
     const_iterator& operator+(std::size_t offset) {
         ptr += offset * SegmentSize;
         return *this;
-    }
-
-    auto operator*() {
-        return std::span<value_type, SegmentSize>(ptr, SegmentSize);
-    }
-
-    bool operator!=(const const_iterator& other) {
-        return other.ptr != ptr;
     }
 };
 const_iterator begin() const {return const_iterator{storage.data()};}
@@ -1596,17 +1598,17 @@ struct iterator {
         return *this;
     }
 
-    iterator& operator+(std::size_t offset) {
-        ptr += offset * SegmentSize;
-        return *this;
-    }
-
-    auto operator*() {
+    auto operator*() const {
         return std::span<value_type, SegmentSize>(ptr, SegmentSize);
     }
 
-    bool operator!=(const iterator& other) {
+    bool operator!=(const iterator& other) const {
         return other.ptr != ptr;
+    }
+
+    iterator& operator+(std::size_t offset) {
+        ptr += offset * SegmentSize;
+        return *this;
     }
 };
 iterator begin() {return iterator{storage.data()};}
