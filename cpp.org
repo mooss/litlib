@@ -1518,7 +1518,7 @@ The iterators have:
  - The bare minimum required to be usable in a range-based for loop (=++=, =*= and =!==).
  - Pointer addition (=+=).
 
-#+begin_src cpp :noweb-ref segstorage/qualified_generation
+#+begin_src cpp :noweb-ref segstorage/qualified_generation :minipage
 struct Q_iterator {
     Q__value_type* ptr;
     Q_iterator& operator++() {
@@ -1660,6 +1660,67 @@ int main() {
 #+RESULTS:
 #+begin_src text :minipage
 Size:          3
+Iteration:     [4, 8] [15, 16] [23, 42]
+First element: [4, 8]
+All segments:  [[4, 8], [15, 16], [23, 42]]
+#+end_src
+
+*** Segmented vector
+
+The invariant of a segmented vector is maintained by =push_back='s requirement that only allows it to accept =SegmentSize= argument, translating into =SegmentSize= calls to the vector's own =push_back=.
+It should be noted that nothing prevents the caller to call =push_back= manually on =storage=, since it is publicly accessible.
+
+#+name: segvector
+#+begin_src cpp :minipage
+template<class T, std::size_t SegmentSize>
+struct segvector: public segstorage<std::vector<T>, SegmentSize> {
+    std::size_t size() const {return this->storage.size() / SegmentSize;};
+
+    template<class... Args>
+    requires(sizeof...(Args) == SegmentSize)
+    void push_back(Args&&... args) {
+        push_back_impl(std::forward<Args>(args)...);
+    }
+
+  private:
+    template<class Arg, class... Args>
+    void push_back_impl(Arg&& head, Args&&... tail) {
+        this->storage.push_back(std::forward<Arg>(head));
+        push_back_impl(std::forward<Args>(tail)...);
+    }
+    void push_back_impl(){}
+};
+#+end_src
+#+depends:segvector :noweb segstorage :cpp vector
+#+depends:<<segvector :noweb <<vector <<segstorage
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb segvector out <<span print <<segvector")>>
+
+int main() {
+    segvector<int, 2> lost{};
+    print{"Empty size:     ", lost.size()};
+    lost.push_back(4, 8); print{"Adding [4, 8]:  ", lost.size(), lost};
+    lost.push_back(15, 16); print{"Adding [15, 16]:", lost.size(), lost};
+    lost.push_back(23, 42); print{"Adding [23, 42]:", lost.size(), lost};
+
+    out("\nIteration:    ");
+    for(auto el: lost)
+        out(" ", el);
+    print{};
+    print{"First element:", lost[0]};
+    print{"All segments: ", lost};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+Empty size:      0
+Adding [4, 8]:   1 [[4, 8]]
+Adding [15, 16]: 2 [[4, 8], [15, 16]]
+Adding [23, 42]: 3 [[4, 8], [15, 16], [23, 42]]
+
 Iteration:     [4, 8] [15, 16] [23, 42]
 First element: [4, 8]
 All segments:  [[4, 8], [15, 16], [23, 42]]
