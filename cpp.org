@@ -1484,7 +1484,7 @@ It must therefore maintain an important invariant, the size of its underlying st
 
 #+name: segstorage
 #+begin_src cpp :minipage
-template<typename Storage, std::size_t SegmentSize>
+template<class Storage, std::size_t SegmentSize>
 struct segstorage {
     using value_type = Storage::value_type;
     static constexpr std::size_t segment_size = SegmentSize;
@@ -1492,6 +1492,7 @@ struct segstorage {
     Storage storage;
 
     std::size_t size() const;
+    bool empty() const {return storage.empty();}
 
     <<segstorage/public>>
 };
@@ -1615,40 +1616,53 @@ iterator begin() {return iterator{storage.data()};}
 iterator end() {return iterator{storage.data() + storage.size()};}
 #+end_src
 
+*** Ostream redirection
+
+
+#+name: <<segstorage
+#+begin_src cpp :minipage
+template<class Storage, std::size_t SegmentSize>
+std::ostream& operator<<(std::ostream& os, const segstorage<Storage, SegmentSize>& container) {
+    return container_redirection::sequential(os, container);
+}
+#+end_src
+#+depends:<<segstorage :noweb segstorage sequential_redirection <<span :cpp ostream
+
 *** Segmented array
 
 The invariant of a segmented array is verified by definition (=Size * SegmentSize=) and stays valid because its size is fixed.
 #+name: segarray
 #+begin_src cpp :minipage
-template<typename T, std::size_t Size, std::size_t SegmentSize>
+template<class T, std::size_t Size, std::size_t SegmentSize>
 struct segarray: segstorage<std::array<T, Size * SegmentSize>, SegmentSize> {
     constexpr std::size_t size() const {return Size;}
 };
 #+end_src
 #+depends:segarray :noweb segstorage :cpp array
+#+depends:<<segarray :noweb <<array <<segstorage
 
-*** Usage
-
+Usage:
 #+begin_src cpp :eval no-export :exports both :minipage
-<<include(":noweb print segarray <<span")>>
+<<include(":noweb segarray out <<span print <<segarray")>>
 
 int main() {
     segarray<int, 3, 2> lost{4, 8, 15, 16, 23, 42};
-    print{"Size:", lost.size()};
-    print out{{.sep="", .end=""}};
-    out("Segments:");
+    print{"Size:         ", lost.size()};
+    out("Iteration:    ");
     for(auto el: lost)
         out(" ", el);
     print{};
     print{"First element:", lost[0]};
+    print{"All segments: ", lost};
 }
 #+end_src
 
 #+RESULTS:
 #+begin_src text :minipage
-Size: 3
-Segments: [4, 8] [15, 16] [23, 42]
+Size:          3
+Iteration:     [4, 8] [15, 16] [23, 42]
 First element: [4, 8]
+All segments:  [[4, 8], [15, 16], [23, 42]]
 #+end_src
 
 
