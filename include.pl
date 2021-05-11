@@ -209,6 +209,12 @@ my %seen_cpp;
 sub extract_dependencies {
     foreach my $name (@_) {
         if(!$seen_noweb{$name}++) { # Kinda weird trick to use a hashtable as a set.
+            if(!defined $global_named_blocks{$name}) {
+                # This is a spontaneous dependency, a dependency
+                # declared without code blocks associated to it.
+                $global_named_blocks{$name} = [];
+            }
+
             my $deps = $global_dependencies{$name};
             # I'm not sure why this script used to stop when no dependencies were declared.
             # stop("No dependencies declared for `$name`.") if !defined $deps;
