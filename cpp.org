@@ -1667,14 +1667,23 @@ All segments:  [[4, 8], [15, 16], [23, 42]]
 
 *** Segmented vector
 
-The invariant of a segmented vector is maintained by =push_back='s requirement that only allows it to accept =SegmentSize= argument, translating into =SegmentSize= calls to the vector's own =push_back=.
-It should be noted that nothing prevents the caller to call =push_back= manually on =storage=, since it is publicly accessible.
+The invariant of a segmented vector is maintained by:
+ - The allocation of multiples of =SegmentSize= in =reserve=.
+ - =push_back='s requirement that only allows it to accept =SegmentSize= arguments, translating into =SegmentSize= calls to the vector's own =push_back=.
+
+It should be noted that nothing prevents the caller to call =push_back= or =reserve= manually on =storage=, since it is publicly accessible.
+The invariant only holds when the storage is modified via =segvector='s methods.
 
 #+name: segvector
 #+begin_src cpp :minipage
 template<class T, std::size_t SegmentSize>
 struct segvector: public segstorage<std::vector<T>, SegmentSize> {
     std::size_t size() const {return this->storage.size() / SegmentSize;};
+    std::size_t capacity() const {return this->storage.capacity() / SegmentSize;};
+
+    void reserve(std::size_t new_cap) {
+        this->storage.reserve(SegmentSize * new_cap);
+    }
 
     template<class... Args>
     requires(sizeof...(Args) == SegmentSize)
@@ -1701,6 +1710,8 @@ Usage:
 int main() {
     segvector<int, 2> lost{};
     print{"Empty size:     ", lost.size()};
+    out("Capacity:        ", lost.capacity(), " before, ");
+    lost.reserve(3); print{lost.capacity(), "after"};
     lost.push_back(4, 8); print{"Adding [4, 8]:  ", lost.size(), lost};
     lost.push_back(15, 16); print{"Adding [15, 16]:", lost.size(), lost};
     lost.push_back(23, 42); print{"Adding [23, 42]:", lost.size(), lost};
@@ -1717,6 +1728,7 @@ int main() {
 #+RESULTS:
 #+begin_src text :minipage
 Empty size:      0
+Capacity:        0 before, 3 after
 Adding [4, 8]:   1 [[4, 8]]
 Adding [15, 16]: 2 [[4, 8], [15, 16]]
 Adding [23, 42]: 3 [[4, 8], [15, 16], [23, 42]]
