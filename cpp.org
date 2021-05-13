@@ -323,7 +323,8 @@ my @default = take_all('default');
 my @delete = take_all('delete');
 
 my %shortcuts = (
-    'move-only' => [[qw/move move=/], [qw/copy copy= empty/]]
+    'move-only' => [[qw/move move=/], [qw/copy copy= empty/]],
+    'all' =>       [[qw/move move= copy copy= empty/], []],
 );
 
 my $selected_shortcut;
@@ -369,13 +370,13 @@ foreach(@delete) {
 #+call: special_members(":name vertices :move-only")
 
 #+RESULTS:
-#+begin_src text
+:results:
 vertices(vertices&&)=default;
 vertices& operator=(vertices&&)=default;
 vertices(const vertices&)=delete;
 vertices& operator=(const vertices&)=delete;
 vertices()=delete;
-#+end_src
+:end:
 
 
 * Printing
