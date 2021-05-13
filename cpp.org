@@ -1809,6 +1809,78 @@ All segments:  [[4, 8], [15, 16], [23, 42]]
 #+end_src
 
 
+** Hash generation
+
+Maps and sets are a pain to use when compared to other containers because of the need to define a hash function for everything outside the standard library.
+This section implements utilities to quickly define hash functions.
+
+*** Hash combinations
+
+This was taken straight from https://stackoverflow.com/a/38140932, which was apparently inspired by Boost's own =hash_combine=.
+I'm not sure of the usefulness of =inline= here.
+
+#+name: hash_combine
+#+begin_src cpp :noweb no
+inline void hash_combine(std::size_t& seed) {}
+
+template <typename T, typename... Rest>
+inline void hash_combine(std::size_t& seed, const T& v, const Rest&... rest) {
+    seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+    hash_combine(seed, rest...);
+}
+#+end_src
+#+depends:hash_combine :cpp functional
+
+*** Make hashable
+
+This was also taken from https://stackoverflow.com/a/38140932.
+#+name: MAKE_HASHABLE
+#+begin_src cpp
+#define MAKE_HASHABLE(type, ...) \
+    namespace std {\
+        template<> struct hash<type> {\
+            std::size_t operator()(const type& t) const {\
+                std::size_t ret = 0;\
+                hash_combine(ret, __VA_ARGS__);\
+                return ret;\
+            }\
+        };\
+    }
+#+end_src
+#+depends:MAKE_HASHABLE :noweb hash_combine
+
+*** Usage
+
+The following =COMMA= trick will be necessary to use =MAKE_HASHABLE= on types with a comma, like =std::pair<int, int>=.
+Without it the comma in =std::pair<int, int>= would be interpreted as the start of a new macro argument.
+It comes from here https://stackoverflow.com/a/19841470.
+
+#+name: COMMA
+#+begin_src cpp
+#define COMMA ,
+#+end_src
+
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb MAKE_HASHABLE COMMA print <<pair :cpp utility map")>>
+
+MAKE_HASHABLE(std::pair<int COMMA int>, t.first, t.second)
+
+int main() {
+    std::map<std::pair<int, int>, int> lost;
+    lost[{4, 8}] = 15; lost[{16, 23}] = 42;
+    for(auto& el: lost) {
+        print{el.first, el.second};
+    }
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+<4, 8> 15
+<16, 23> 42
+#+end_src
+
+
 * Various utilities
 
 This section is dedicated to utilities without overarching themes.
