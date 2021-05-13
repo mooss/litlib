@@ -1751,6 +1751,10 @@ struct segvector: public segstorage<std::vector<T>, SegmentSize> {
         this->storage.reserve(SegmentSize * new_cap);
     }
 
+    void resize(std::size_t count, const T& value) {
+        this->storage.resize(count * SegmentSize, value);
+    }
+
     template<class... Args>
     requires(sizeof...(Args) == SegmentSize)
     void push_back(Args&&... args) {
