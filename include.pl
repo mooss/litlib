@@ -209,7 +209,7 @@ my %seen_cpp;
 sub extract_dependencies {
     foreach my $name (@_) {
         if(!$seen_noweb{$name}++) { # Kinda weird trick to use a hashtable as a set.
-            if(!defined $global_named_blocks{$name}) {
+            if(!defined $global_named_blocks{$name} && defined $global_dependencies{$name}) {
                 # This is a spontaneous dependency, a dependency
                 # declared without code blocks associated to it.
                 $global_named_blocks{$name} = [];
