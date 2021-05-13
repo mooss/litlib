@@ -268,7 +268,7 @@ sub print_codeblock_rec {
 
     for my $linum (@{$global_named_blocks{$name}}) {
         my $linum_copy = $linum; # This language is driving me nuts.
-        my $noweb_disabled = $global_lines[$linum_copy - 1] =~ /:noweb +no[$ ]/;
+        my $noweb_disabled = $global_lines[$linum_copy - 1] =~ /:noweb +no( |$)/;
 
         until ((my $line = $global_lines[$linum_copy]) =~ /^\s*#\+end_src/ || $linum_copy >= @global_lines) {
             if ($line =~ /(\s*)<<(.+)>>/ && !$noweb_disabled) {
