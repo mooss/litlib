@@ -472,9 +472,9 @@ double -> 8 bytes (64 bits)
 #+end_src
 
 
-** Container redirection
+** =ostream= redirection overloads
 
-This section overload ostream's =<<= operator for some containers.
+This section overloads ostream's =<<= operator for some types from the standard library.
 
 *** Sequential containers
 
@@ -539,7 +539,7 @@ std::ostream& operator<<(std::ostream& os, const std::array<T, N>& container) {
 #+depends:<<array :noweb sequential_redirection :cpp ostream array
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb <<forward_list <<span <<vector <<array print :cpp forward_list vector array span")>>
 int main() {
     print{"1. ||| forward_list |||"};
@@ -583,6 +583,71 @@ span(lost_array) [4, 8, 15, 16, 23, 42]
 
 Trying to directly print a C-style array only prints the address of its first element, as should be expected.
 To really print the array, it must be wrapped explicitely in =std::span=.
+
+*** Tuples and pairs
+
+This ostream redirection operator for =std::tuple= uses =tuple_redirection_impl= as a closure, allowing it to be applied on all elements of the tuple to print:
+#+name: <<tuple
+#+begin_src cpp :minipage
+struct tuple_redirection_impl {
+    std::ostream& os;
+
+    void comma_separated_tail() {}
+
+    template<class Head, class... Tail>
+    void comma_separated_tail(const Head& head, const Tail&... tail) {
+        os << ", " << head;
+        comma_separated_tail(tail...);
+    }
+
+    template<class Head, class... Tail>
+    void operator()(const Head& head, const Tail&... tail) {
+        os << head;
+        comma_separated_tail(tail...);
+    }
+
+}; // struct tuple_redirection_impl
+
+template<class... Args>
+std::ostream& operator<<(std::ostream& os, const std::tuple<Args...>& content) {
+    os << '<';
+    std::apply(tuple_redirection_impl{os}, content);
+    os << '>';
+    return os;
+}
+#+end_src
+#+depends:<<tuple :cpp ostream tuple
+
+=std::pair= is easier to deal with:
+#+name: <<pair
+#+begin_src cpp :minipage
+template<class First, class Second>
+std::ostream& operator<<(std::ostream& os, const std::pair<First, Second>& content) {
+    return os << '<' << content.first << ", " << content.second << '>';
+}
+#+end_src
+#+depends:<<pair :cpp ostream utility
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb print <<tuple <<pair :cpp tuple utility")>>
+
+int main() {
+    auto lost = std::make_tuple(4, 8, 15, 16, 23, 42);
+    print{lost};
+    std::pair<
+        std::tuple<int, int, int>,
+        std::tuple<int, int, int>
+    > lo_st{{4, 8, 15}, {16, 23, 42}};
+    print{lo_st};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+<4, 8, 15, 16, 23, 42>
+<<4, 8, 15>, <16, 23, 42>>
+#+end_src
 
 
 ** Print function
