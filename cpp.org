@@ -1778,7 +1778,7 @@ Usage:
 <<include(":noweb segvector out <<span print <<segvector")>>
 
 int main() {
-    segvector<int, 2> lost{};
+    segvector<int, 2> lost;
     print{"Empty size:     ", lost.size()};
     out("Capacity:        ", lost.capacity(), " before, ");
     lost.reserve(3); print{lost.capacity(), "after"};
@@ -1806,6 +1806,46 @@ Adding [23, 42]: 3 [[4, 8], [15, 16], [23, 42]]
 Iteration:     [4, 8] [15, 16] [23, 42]
 First element: [4, 8]
 All segments:  [[4, 8], [15, 16], [23, 42]]
+#+end_src
+
+*** Segmented span
+
+There is no way to ensure the validity of a =segspan= by construction, so a =valid= method is provided.
+
+#+name: segspan
+#+begin_src cpp :minipage
+template<class T, std::size_t SegmentSize>
+struct segspan: segstorage<std::span<T>, SegmentSize> {
+    std::size_t size() const {return this->storage.size() / SegmentSize;}
+    bool valid() const {return this->storage.size() % SegmentSize == 0;}
+};
+#+end_src
+#+depends:segspan :noweb segstorage :cpp span
+#+depends:<<segspan :noweb <<span <<segstorage
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print <<vector segspan <<segspan :cpp vector")>>
+
+int main() {
+    std::vector lost{4, 8, 15, 16, 23, 42};
+    print{lost};
+    segspan<int, 2> seglost{lost};
+    print{seglost};
+    print{segspan<int, 3>{lost}};
+    segspan<int, 4> segfault{lost};
+    print{"seglost is", seglost.valid() ? "valid": "not valid"};
+    print{"segfault is", segfault.valid() ? "valid": "not valid"};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+[4, 8, 15, 16, 23, 42]
+[[4, 8], [15, 16], [23, 42]]
+[[4, 8, 15], [16, 23, 42]]
+seglost is valid
+segfault is not valid
 #+end_src
 
 
