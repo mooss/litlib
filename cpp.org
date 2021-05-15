@@ -1889,8 +1889,6 @@ This was also taken from https://stackoverflow.com/a/38140932.
 #+end_src
 #+depends:MAKE_HASHABLE :noweb hash_combine
 
-*** Usage
-
 The following =COMMA= trick will be necessary to use =MAKE_HASHABLE= on types with a comma, like =std::pair<int, int>=.
 Without it the comma in =std::pair<int, int>= would be interpreted as the start of a new macro argument.
 It comes from here https://stackoverflow.com/a/19841470.
@@ -1900,6 +1898,7 @@ It comes from here https://stackoverflow.com/a/19841470.
 #define COMMA ,
 #+end_src
 
+Usage:
 #+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb MAKE_HASHABLE COMMA print <<pair :cpp utility map")>>
 
@@ -1919,6 +1918,26 @@ int main() {
 <4, 8> 15
 <16, 23> 42
 #+end_src
+
+*** Standard library hashes
+
+=MAKE_HASHABLE= is very useful but not suitable to write utilities in LitLib's style because it might result in multiple definitions of the same hash and therefore in compilation errors.
+This section defines generic =hash= implementations for standard types that are suitable to use in LitLib code blocks.
+
+#+name: hash/pair
+#+begin_src cpp
+namespace std {
+template<typename First, typename Second>
+struct hash<std::pair<First, Second>> {
+    std::size_t operator()(const std::pair<First, Second>& p) const {
+        std::size_t ret = 0;
+        hash_combine(ret, p.first, p.second);
+        return ret;
+    }
+};
+}
+#+end_src
+#+depends:hash/pair :noweb hash_combine :cpp utility
 
 
 * Various utilities
