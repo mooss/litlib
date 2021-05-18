@@ -1432,7 +1432,7 @@ std::tuple<doubled<4>, doubled<8>, doubled<15>, doubled<16>, doubled<23>, double
 ** Constexpr utilities
 
 #+name: constexpr/abs
-#+begin_src cpp
+#+begin_src cpp :minipage
 template<typename T>
 constexpr T abs(T value) {
     return value >= 0 ? value: -value;
@@ -1440,7 +1440,7 @@ constexpr T abs(T value) {
 #+end_src
 
 Usage:
-#+begin_src cpp :eval no-export :exports both
+#+begin_src cpp :eval no-export :exports both :minipage
 <<include(":noweb constexpr/abs print")>>
 
 int main() {
@@ -1457,6 +1457,60 @@ int main() {
 23.42
 #+end_src
 
+
+** Other utilities
+
+*** Constructor side effect to lambda
+
+Constructor side effect (cse) is the name of a trick consisting of using a type like a function.
+This is what was used for the =print= function.
+To be honest, I'm not sure if this trick is efficient or was necessary in the first place.
+
+One problem with it is that it cannot be passed directly to a higher order function and is therefore not as versatile as a functor or a lambda.
+=cse_lambda= bypasses this problem by converting a cse to a templated lambda.
+
+#+name: cse_lambda
+#+begin_src cpp :minipage
+template<class ConstructorSideEffect>
+auto cse_lambda() {
+    return []<class... Args>(Args&&... args) {
+        ConstructorSideEffect{std::forward<Args>(args)...};
+    };
+}
+#+end_src
+#+depends:cse_lambda :cpp utility
+
+# ((
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb cse_lambda print :cpp vector")>>
+
+template<typename T, class Function>
+void vector_apply(std::vector<T>& v, Function fun) {
+    for(auto& el: v)
+        fun(el);
+}
+
+int main() {
+    std::vector<int> lost{4, 8, 15, 16, 23, 42};
+    // vector_apply(lost, print);   // gcc error: missing template arguments before ‘)’ token
+    // vector_apply(lost, print<>); // gcc error: expected primary-expression before ‘)’ token
+    // vector_apply(lost, print()); // Not what is wanted, actually uses operator().
+    vector_apply(lost, cse_lambda<print<>>());
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+4
+8
+15
+16
+23
+42
+#+end_src
+
+=print<>= must be used because =print= is a templated type.
 
 
 * Data structures
