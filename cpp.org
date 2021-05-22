@@ -2071,6 +2071,46 @@ const T& max(const T& left, const T& right) {
 }
 #+end_src
 
+*** Midpoint computation
+
+This implementation is compatible with containers defining a =value_type=.
+It's up to the caller to ensure that the containers have the correct length.
+
+#+name: fill_midpoint
+#+begin_src cpp
+template<class Midpoint, class Left, class Right>
+requires std::same_as<typename Midpoint::value_type, typename Left::value_type>
+      && std::same_as<typename Midpoint::value_type, typename Right::value_type>
+Midpoint& fill_midpoint(Midpoint& midpoint, const Left& left, const Right& right) {
+    auto leftit = left.cbegin(); auto rightit = right.cbegin();
+    for(
+        auto midit = midpoint.begin();
+        midit != midpoint.end();
+        ++midit, ++leftit, ++rightit
+    )
+        *midit = (*leftit + *rightit) / 2;
+    return midpoint;
+}
+#+end_src
+#+depends:fill_midpoint :cpp concepts
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print fill_midpoint <<vector :cpp vector")>>
+
+int main() {
+    std::vector<float> green{ 0,  1,  0};
+    std::vector<float>  blue{ 0,  0,  1};
+    std::vector<float>  teal{-1, -1, -1};
+    print{"The midpoint of", green, "and", blue, "is", fill_midpoint(teal, green, blue)};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+The midpoint of [0, 1, 0] and [0, 0, 1] is [0, 0.5, 0.5]
+#+end_src
+
 
 ** Finaliser
 
