@@ -1464,7 +1464,8 @@ int main() {
 
 Constructor side effect (cse) is the name of a trick consisting of using a type like a function.
 This is what was used for the =print= function.
-To be honest, I'm not sure if this trick is efficient or was necessary in the first place.
+To be honest, I'm not sure if this trick is efficient.
+Its usefulness with regards to the print function is to give a syntax to specify a custom separator and a custom end of line.
 
 One problem with it is that it cannot be passed directly to a higher order function and is therefore not as versatile as a functor or a lambda.
 =cse_lambda= bypasses this problem by converting a cse to a templated lambda.
