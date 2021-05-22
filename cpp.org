@@ -2112,6 +2112,128 @@ The midpoint of [0, 1, 0] and [0, 0, 1] is [0, 0.5, 0.5]
 #+end_src
 
 
+** Conversions
+*** To span
+
+This section defines a =to_span= function that can convert a contiguous container to a span.
+Most of the implementation logic is hidden in its own namespace:
+#+begin_src cpp :noweb-ref to_span :minipage
+namespace to_span_details {
+template<
+    class Container,
+    std::size_t Extent,
+    std::size_t Offset = 0
+> struct impl {
+    using value_type = typename Container::value_type;
+    static auto convert(Container& container) {
+        return std::span<value_type, Extent>(
+            container.data() + Offset,
+            Extent - Offset
+        );
+    }
+
+    static auto convert(const Container& container) {
+        return std::span<const value_type, Extent>(
+            container.data() + Offset,
+            Extent - Offset
+        );
+    }
+};
+
+<<to_span_details>>
+} // namespace to_span_impl
+#+end_src
+#+depends:to_span :cpp span
+
+Dynamic extents must use the =size= method to take into account the actual size of the container:
+#+begin_src cpp :noweb-ref to_span_details :minipage
+template<
+    class Container,
+    std::size_t Offset
+> struct impl<Container, std::dynamic_extent, Offset> {
+    static auto convert(Container& container) {
+        return std::span<typename Container::value_type, std::dynamic_extent>(
+            container.data() + Offset,
+            container.size() - Offset
+        );
+    }
+
+    static auto convert(const Container& container) {
+        return std::span<const typename Container::value_type, std::dynamic_extent>(
+            container.data() + Offset,
+            container.size() - Offset
+        );
+    }
+};
+#+end_src
+
+The actual =to_span= function:
+#+begin_src cpp :noweb-ref to_span :minipage
+template<
+    std::size_t Extent = std::dynamic_extent,
+    std::size_t Offset = 0,
+    class Container
+> auto to_span(Container& container) {
+    return to_span_details::impl<Container, Extent, Offset>::convert(container);
+}
+
+template<
+    std::size_t Extent = std::dynamic_extent,
+    std::size_t Offset = 0,
+    class Container
+> auto to_span(const Container& container) {
+    return to_span_details::impl<Container, Extent, Offset>::convert(container);
+}
+#+end_src
+
+=to_span_offset= inverts the =Offset= and =Extent= template arguments.
+This is mostly useful to use an offset on a span with a dynamic extent.
+For example, =to_span<std::dynamic_extent, 6>(data)= can be expressed as =to_span_offset<6>(data)=.
+
+#+name: to_span_offset
+#+begin_src cpp :minipage
+template<
+    std::size_t Offset = 0,
+    std::size_t Extent = std::dynamic_extent,
+    class Container
+> auto to_span_offset(Container& container) {
+    return to_span<Extent, Offset, Container>(container);
+}
+
+template<
+    std::size_t Offset = 0,
+    std::size_t Extent = std::dynamic_extent,
+    class Container
+> auto to_span_offset(const Container& container) {
+    return to_span<Extent, Offset, Container>(container);
+}
+#+end_src
+#+depends:to_span_offset :noweb to_span
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :minipage
+<<include(":noweb print to_span to_span_offset <<span :cpp vector array")>>
+
+int main() {
+    const std::vector lost{4, 8, 15, 16, 23, 42};
+    print{to_span<4>(lost)};
+    print{to_span_offset<4>(lost)};
+
+    std::array other{6, 108};
+    auto other_span = to_span(other);
+    std::swap(other_span[0], other_span[1]);
+    print{other_span};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+[4, 8, 15, 16]
+[23, 42]
+[108, 6]
+#+end_src
+
+
 ** Finaliser
 
 =finaliser= is a class that can be returned from a function and trigger a side effect when the object is destroyed, thus tying the action to the scope of the =finaliser=.
