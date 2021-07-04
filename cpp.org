@@ -2233,6 +2233,74 @@ int main() {
 [108, 6]
 #+end_src
 
+*** Between scales of numbers
+
+=scale_converter= can convert linearly between two scales of a given type.
+The type used for the conversion can be specified via the =ConvType= template parameter.
+
+#+name: scale_converter
+#+begin_src cpp
+template<class From, class To, class ConvType=float>
+struct scale_converter {
+    template<class T>
+    struct extremum {
+        T low;
+        T high;
+    };
+    extremum<From> from;
+    extremum<To> to;
+    ConvType proportion;
+
+    scale_converter(extremum<From> from_, extremum<To> to_):
+        from(from_), to(to_), proportion(
+            static_cast<ConvType>(to.high - to.low) /
+            static_cast<ConvType>(from.high - from.low)
+        )
+    {}
+
+    To convert(From value) {
+        return static_cast<To>(static_cast<ConvType>(value - from.low) * proportion) + to.low;
+    }
+
+    To convert_bounded(From value) {
+        if(value <= from.low)
+            return to.low;
+        if(value >= from.high)
+            return to.high;
+        return convert(value);
+    }
+};
+#+end_src
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb out scale_converter")>>
+
+int main() {
+    scale_converter<float, int> percent_to_lost({0.f, 100.f}, {4, 42});
+    scale_converter<int, float> lost_to_percent({4, 42}, {0.f, 100.f});
+    for(float i: {-50, 0, 10, 20, 25, 50, 74, 75, 76, 100, 12000}) {
+        int conversion = percent_to_lost.convert(i);
+        out(i, "% -> ", conversion, " lost -> ", lost_to_percent.convert(conversion), "%\n");
+    }
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+-50% -> -15 lost -> -50%
+0% -> 4 lost -> 0%
+10% -> 7 lost -> 7.89474%
+20% -> 11 lost -> 18.4211%
+25% -> 13 lost -> 23.6842%
+50% -> 23 lost -> 50%
+74% -> 32 lost -> 73.6842%
+75% -> 32 lost -> 73.6842%
+76% -> 32 lost -> 73.6842%
+100% -> 42 lost -> 100%
+12000% -> 4564 lost -> 12000%
+#+end_src
+
 
 ** Finaliser
 
