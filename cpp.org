@@ -2738,6 +2738,127 @@ rgb fifth: [0, 1, 0] == [0, 1, 0]
 #+end_src
 
 
+** Scaled interpolation
+
+Where =linear_interpolation= gave the same importance to all the data points, with =scaled_interpolation= it is possible to, in a way, give more importance to some data points by putting more distance between its neighbours.
+
+#+name: scaled_interpolation
+#+begin_src cpp
+namespace scaled_interpolation_details {
+template<typename ScalarT, typename DataT, std::size_t SegmentSize, typename InterpT=float>
+class scaled_interpolation {
+  public:
+    using data_point = std::span<DataT, SegmentSize>;
+    using scalar_type = ScalarT;
+    struct step {
+        ScalarT scalar;
+        std::array<DataT, SegmentSize> data;
+    };
+
+    std::vector<step> storage;
+
+    void fill(data_point destination, ScalarT scalar) const {
+        auto right = find_right(scalar);
+        if(right == 0)
+            fill_without_interpolation(destination, 0);
+        else if(right >= storage.size())
+            fill_without_interpolation(destination, storage.size() - 1);
+
+        else {
+            auto left = right - 1;
+            InterpT proportion = static_cast<InterpT>(scalar - storage[left].scalar) /
+                                 static_cast<InterpT>(storage[right].scalar - storage[left].scalar);
+            for(std::size_t i = 0; i < SegmentSize; ++i)
+                destination[i] = storage[left].data[i] * (1 - proportion)
+                               + storage[right].data[i] * proportion;
+        }
+    }
+
+    ScalarT min() const {return storage.front().scalar;}
+    ScalarT max() const {return storage.back().scalar;}
+
+  private:
+    void fill_without_interpolation(data_point destination, std::size_t index) const {
+        for(std::size_t i = 0; i < SegmentSize; ++i)
+            destination[i] = storage[index].data[i];
+    }
+
+    std::size_t find_right(ScalarT scalar) const {
+        std::size_t result = 0;
+        for(; result < storage.size(); ++result)
+            if(storage[result].scalar > scalar)
+                break;
+        return result;
+    }
+};
+
+}
+using scaled_interpolation_details::scaled_interpolation;
+#+end_src
+#+depends:scaled_interpolation :cpp array vector span
+
+#+name: rgb_scaled_interpolation
+#+begin_src cpp
+template<typename ScalarT, typename InterpT=float>
+using rgb_scaled_interpolation = scaled_interpolation<ScalarT, float, 3, InterpT>;
+#+end_src
+#+depends:rgb_scaled_interpolation :noweb scaled_interpolation
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print <<array rgb_scaled_interpolation :cpp array")>>
+
+int main() {
+    rgb_scaled_interpolation<int> rgb_skewed_gradient{{
+        {0,  {1, 0, 0}},
+        {3,  {0, 1, 0}},
+        {10, {0, 0, 1}}
+    }};
+    std::array<float, 3> color_buffer;
+    for(int i = -1; i <= 12; ++i) {
+        rgb_skewed_gradient.fill(color_buffer, i);
+        print{i, color_buffer};
+    }
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+-1 [1, 0, 0]
+0 [1, 0, 0]
+1 [0.666667, 0.333333, 0]
+2 [0.333333, 0.666667, 0]
+3 [0, 1, 0]
+4 [0, 0.857143, 0.142857]
+5 [0, 0.714286, 0.285714]
+6 [0, 0.571429, 0.428571]
+7 [0, 0.428571, 0.571429]
+8 [0, 0.285714, 0.714286]
+9 [0, 0.142857, 0.857143]
+10 [0, 0, 1]
+11 [0, 0, 1]
+12 [0, 0, 1]
+#+end_src
+
+The following can transform the scale of a =scaled_interpolation= based on new min and max values:
+#+name: transform_scaled_interpolation
+#+begin_src cpp
+template<class ScaleType>
+ScaleType& transform_scaled_interpolation(
+    ScaleType& scale,
+    typename ScaleType::scalar_type min,
+    typename ScaleType::scalar_type max
+) {
+    scale_converter<typename ScaleType::scalar_type, typename ScaleType::scalar_type> conv(
+        {scale.min(), scale.max()}, {min, max}
+    );
+    for(auto& step: scale.storage)
+        step.scalar = conv.convert(step.scalar);
+}
+#+end_src
+#+depends:transform_scaled_interpolation :noweb scale_converter
+
+
 * Cool tricks (don't try this at home)
 
 This section is dedicated to weird C++ voltige.
