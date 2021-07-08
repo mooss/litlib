@@ -2859,6 +2859,15 @@ ScaleType& transform_scaled_interpolation(
 #+depends:transform_scaled_interpolation :noweb scale_converter
 
 
+** Nothing
+
+This function does nothing. It's my favourite.
+#+name: nothing
+#+begin_src cpp
+void nothing(){}
+#+end_src
+
+
 * Cool tricks (don't try this at home)
 
 This section is dedicated to weird C++ voltige.
