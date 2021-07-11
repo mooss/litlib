@@ -437,6 +437,10 @@ template<typename T>
 void print_type() {
     std::cout << type_str<T>() << '\n';
 }
+template<typename T>
+void print_type(const T&) {
+    print_type<T>();
+}
 #+end_src
 #+depends:print_type :noweb type_str :cpp iostream
 
@@ -445,6 +449,10 @@ void print_type() {
 template<typename T>
 void print_size() {
     std::cout << type_str<T>() << " -> " << sizeof(T) << " bytes (" << sizeof(T) * CHAR_BIT << " bits)\n";
+}
+template<typename T>
+void print_size(const T&) {
+    print_size<T>();
 }
 #+end_src
 #+depends:print_size :noweb type_str :cpp iostream climits
@@ -456,9 +464,11 @@ using namespace std;
 
 int main(){
     print_type<int>();
+    print_type(42);
     print_size<int>();
     const long ft = 42;
     print_size<decltype(ft)>();
+    print_size<>(ft);
     print_size<decltype(12.3)>();
 }
 #+end_src
@@ -466,10 +476,14 @@ int main(){
 #+RESULTS:
 #+begin_src text :minipage
 int
+int
 int -> 4 bytes (32 bits)
 const long int -> 8 bytes (64 bits)
+long int -> 8 bytes (64 bits)
 double -> 8 bytes (64 bits)
 #+end_src
+
+Using a value to print its type removes a potential const qualifier but it's very handy anyway.
 
 
 ** =ostream= redirection overloads
