@@ -2108,6 +2108,25 @@ Midpoint& fill_midpoint(Midpoint& midpoint, const Left& left, const Right& right
 #+end_src
 #+depends:fill_midpoint :cpp concepts
 
+A specialisation for =std::span= is handy because passing by reference does not work well with spans.
+#+name: fill_midpoint/span
+#+begin_src cpp
+template<class T, std::size_t Extent>
+std::span<T, Extent> fill_midpoint(
+    std::span<T, Extent> midpoint, std::span<T, Extent> left, std::span<T, Extent> right
+) {
+    auto leftit = left.begin(); auto rightit = right.begin();
+    for(
+        auto midit = midpoint.begin();
+        midit != midpoint.end();
+        ++midit, ++leftit, ++rightit
+    )
+        *midit = (*leftit + *rightit) / 2;
+    return midpoint;
+}
+#+end_src
+#+depends:fill_midpoint/span :cpp span
+
 Usage:
 #+begin_src cpp :eval no-export :exports both
 <<include(":noweb print fill_midpoint <<vector :cpp vector")>>
