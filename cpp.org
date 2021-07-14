@@ -2887,6 +2887,7 @@ ScaleType& transform_scaled_interpolation(
     );
     for(auto& step: scale.storage)
         step.scalar = conv.convert(step.scalar);
+    return scale;
 }
 #+end_src
 #+depends:transform_scaled_interpolation :noweb scale_converter
