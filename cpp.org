@@ -2894,11 +2894,28 @@ ScaleType& transform_scaled_interpolation(
 
 ** Nothing
 
-This function does nothing. It's my favourite.
+This lambda does nothing, no matter what you give it. It's my favourite.
 #+name: nothing
 #+begin_src cpp
-void nothing(){}
+auto nothing = []<class... T>(const T&...) {};
 #+end_src
+
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print nothing")>>
+
+int main() {
+    print{"Nothing to see."};
+    nothing(4, 8, 15, 16, 23, 42);
+    nothing();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+Nothing to see.
+#+end_src
+
+In all seriousness, this is very useful when an interface expects a callback but no side effect is needed.
 
 
 * Cool tricks (don't try this at home)
