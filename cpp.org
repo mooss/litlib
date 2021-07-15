@@ -2009,6 +2009,19 @@ struct hash<std::pair<First, Second>> {
 #+depends:hash/pair :noweb hash_combine :cpp utility
 
 
+** Coordinates
+
+The coordinates presented here are more types that proper data structures.
+
+*** 2d
+
+#+name: xy_coords
+#+begin_src cpp
+template<typename T>
+struct xy_coords {T x; T y;};
+#+end_src
+
+
 * Functional programming
 
 ** Function sequence
