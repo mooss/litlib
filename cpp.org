@@ -2009,6 +2009,65 @@ struct hash<std::pair<First, Second>> {
 #+depends:hash/pair :noweb hash_combine :cpp utility
 
 
+* Functional programming
+
+** Function sequence
+
+This struct stores references of callable that can then be sequentially called as if there was only one callable.
+
+Some notes:
+ - Ideally the functions would be stored by value when receiving a rvalue reference but I don't know how to do that right now.
+   This means that the functions must be stored elsewhere.
+ - All arguments are passed by reference.
+
+#+name: funseq
+#+begin_src cpp
+template<class... Functions>
+struct funseq {
+    std::tuple<Functions&...> functions;
+
+    funseq(Functions&... _functions):
+        functions(_functions...)
+    {}
+
+    template<class... Args>
+    void operator()(Args&... args) {
+        foreach_tuple([&](auto& fun) {fun(args...);}, functions);
+    }
+};
+#+end_src
+#+depends:funseq :noweb foreach_tuple :cpp tuple
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print funseq")>>
+
+void print_lost(const char* ignore) {
+    print{4, 8, 15, 16, 23, 42};
+}
+
+struct print_chevron {
+    void operator()(auto& el) {
+        print(el, " <");
+    }
+};
+
+int main() {
+    auto print_pipes = [](const auto& el) {print(el, "||");};
+    print_chevron chev{};
+    funseq piloch(chev, print_pipes, print_lost);
+    piloch("constant");
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+constant  <
+constant ||
+4 8 15 16 23 42
+#+end_src
+
+
 * Various utilities
 
 This section is dedicated to utilities without overarching themes.
