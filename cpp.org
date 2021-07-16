@@ -2018,7 +2018,10 @@ The coordinates presented here are more types that proper data structures.
 #+name: xy_coords
 #+begin_src cpp
 template<typename T>
-struct xy_coords {T x; T y;};
+struct xy_coords {
+    T x; T y;
+    bool operator==(const xy_coords&) const=default;
+};
 #+end_src
 
 
