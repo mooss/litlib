@@ -273,9 +273,26 @@ sub print_codeblock_rec {
         my $linum_copy = $linum; # This language is driving me nuts.
         my $noweb_disabled = $global_lines[$linum_copy - 1] =~ /:noweb +no( |$)/;
 
-        until ((my $line = $global_lines[$linum_copy]) =~ /^\s*#\+end_src/ || $linum_copy >= @global_lines) {
-            if ($line =~ /(\s*)<<(.+)>>/ && !$noweb_disabled) {
-                print_codeblock_rec($2, $prefix . $1, $depth + 1);
+        until((my $line = $global_lines[$linum_copy]) =~ /^\s*#\+end_src/ || $linum_copy >= @global_lines) {
+            if($line =~ /(\s*)<<(.+)>>/ && !$noweb_disabled) {
+                my $new_prefix = $prefix . $1; my $include = $2;
+                if($include =~ /include\(":noweb (.*)"\)/) { # Call to a block named "include".
+                    # Self-inclusion, i.e. we suppose that this is a call to a code block that itself calls
+                    # this script. The present implementation of this mechanism is a bit of a hack because
+                    # in particular this script might have parsed more files than the naked <<include(...)>>
+                    # invocation might have. It also only supports noweb dependencies.
+                    my @splitted = split(/ /, $1);
+                    my ($dependencies, undef) = extract_dependencies(\@splitted);
+                    my $already_printed = {};
+                    foreach(@{$dependencies->{noweb}}) {
+                        # Using print_codeblock_once here makes it co-recursive with print_codeblock_rec
+                        # and makes the whole thing rather weird to reason about.
+                        # print_codeblock_rec($dependency, $new_prefix, $depth + 1);
+                        print_codeblock_once($_, $already_printed, $new_prefix, $depth + 1);
+                    }
+                } else { # Naked include.
+                    print_codeblock_rec($include, $new_prefix, $depth + 1);
+                }
             } else {
                 # Lines starting with `#+`or `*` are a syntax specific to org mode.
                 # To handle code blocks with lines starting with those syntaxes, org-mode automatically
@@ -290,16 +307,18 @@ sub print_codeblock_rec {
     }
 }
 
-sub print_codeblock {
-    my ($name, $already_printed) = @_;
-    $already_printed //= {};
+sub print_codeblock_once {
+    # Print a given code block, with its dependencies on the condition that it has not been printed before.
+    # Its dependencies are marked as printed.
+    my ($name, $already_printed, $prefix, $depth) = @_;
+    $already_printed //= {}; $prefix //= ''; $depth //= 0;
     return if exists $already_printed->{$name};
     $already_printed->{$name} = undef;
     if(defined $reffed{$name}) {
         # Not printing twice if also in wanted noweb-ref (included codeblocks can be printed twice).
         foreach(@{$reffed{$name}}) { $already_printed->{$_} = undef; }
     }
-    print_codeblock_rec($name, '', 0);
+    print_codeblock_rec($name, $prefix, $depth);
 };
 
 ###########################
@@ -318,7 +337,7 @@ if($tangle) { # Only takes noweb dependencies into account.
 
         select $dest_handle; # select STDOUT to restore STDOUT as the default output file.
         foreach(@{$dependencies->{noweb}}) {
-            print_codeblock($_, $already_printed);
+            print_codeblock_once($_, $already_printed);
         }
         close $dest_handle;
     }
@@ -335,5 +354,5 @@ foreach(@{$dependencies->{cpp}}) {
     say "#include <$_>";
 }
 foreach(@{$dependencies->{noweb}}) {
-    print_codeblock($_, $already_printed);
+    print_codeblock_once($_, $already_printed);
 }
