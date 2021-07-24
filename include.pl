@@ -202,35 +202,38 @@ lines_and_blocks();
 ###########################
 # Dependencies resolution #
 ###########################
-my @cpp_dependencies;
-my @noweb_dependencies;
-my %seen_noweb;
-my %seen_cpp;
 sub extract_dependencies {
-    foreach my $name (@_) {
-        if(!$seen_noweb{$name}++) { # Kinda weird trick to use a hashtable as a set.
-            if(!defined $global_named_blocks{$name} && defined $global_dependencies{$name}) {
+    my ($symbols, $dependencies, $seen) = @_;
+    $dependencies //= {}; # // Is the defined-or operator. Using it like this amounts to giving a default value.
+    $seen //= {};
+
+    foreach my $symbol (@$symbols) {
+        if(!$seen->{'noweb'}{$symbol}++) { # Kinda weird trick to use a hashtable as a set.
+            if(!defined $global_named_blocks{$symbol} && defined $global_dependencies{$symbol}) {
                 # This is a spontaneous dependency, a dependency
                 # declared without code blocks associated to it.
-                $global_named_blocks{$name} = [];
+                $global_named_blocks{$symbol} = [];
             }
 
-            my $deps = $global_dependencies{$name};
+            my $deps = $global_dependencies{$symbol};
             # I'm not sure why this script used to stop when no dependencies were declared.
-            # stop("No dependencies declared for `$name`.") if !defined $deps;
+            # stop("No dependencies declared for `$symbol`.") if !defined $deps;
+
             foreach(@{$deps->{cpp}}) {
-                push @cpp_dependencies, $_ if !$seen_cpp{$_}++;
+                push @{$dependencies->{cpp}}, $_ if !$seen->{cpp}{$_}++;
             }
 
             # Code blocks must be included *after* their dependencies, but to avoid double inclusions,
             # the named code blocks who are subsets of reffed codeblocks must be marked as seen.
-            if(defined $reffed{$name}) {
-                foreach(@{$reffed{$name}}) { $seen_noweb{$_}++; }
+            if(defined $reffed{$symbol}) {
+                foreach(@{$reffed{$symbol}}) { $seen->{noweb}{$_}++; }
             }
-            extract_dependencies(@{$deps->{noweb}}) if defined $deps->{noweb};
-            push @noweb_dependencies, $name;
+            extract_dependencies($deps->{noweb}, $dependencies, $seen) if defined $deps->{noweb};
+            push @{$dependencies->{noweb}}, $symbol;
         }
     }
+
+    return ($dependencies, $seen);
 }
 
 ########################
@@ -302,17 +305,18 @@ sub print_codeblock {
 ###########################
 # Putting it all together #
 ###########################
-if($tangle) {
+if($tangle) { # Only takes noweb dependencies into account.
     while(my ($name, $destination) = each %global_tangle) {
-        # Extract the dependencies *only* for the code block to tangle.
-        @noweb_dependencies = ();
-        extract_dependencies($name);
+        # Calling extract_dependencies like this, with only one code block name and no other arguments
+        # extracts the dependencies of this code block in isolation.
+        my ($dependencies, undef) = extract_dependencies([$name]);
 
         make_necessary_dir($destination);
         open(my $dest_handle, '>:encoding(UTF-8)', $destination)
             or die "Failed to open `$1`.";
+
         select $dest_handle; # select STDOUT to restore STDOUT as the default output file.
-        foreach(@noweb_dependencies) {
+        foreach(@{$dependencies->{noweb}}) {
             print_codeblock($_);
         }
         close $dest_handle;
@@ -320,15 +324,15 @@ if($tangle) {
     exit; # Tangling is done at the exclusion of anything else.
 }
 
-extract_dependencies(@$noweb);
+my ($dependencies, $seen) = extract_dependencies($noweb);
 
 foreach(@$cpp) {
-    push @cpp_dependencies, $_ if !$seen_cpp{$_}++;
+    push @{$dependencies->{cpp}}, $_ if !$seen->{cpp}{$_}++;
 }
 
-foreach(@cpp_dependencies) {
+foreach(@{$dependencies->{cpp}}) {
     say "#include <$_>";
 }
-foreach(@noweb_dependencies) {
+foreach(@{$dependencies->{noweb}}) {
     print_codeblock($_);
 }
