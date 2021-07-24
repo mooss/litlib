@@ -290,14 +290,14 @@ sub print_codeblock_rec {
     }
 }
 
-# Not printing twice if also in wanted noweb-ref (included codeblocks can be printed twice).
-my %already_printed;
 sub print_codeblock {
-    my $name = shift;
-    return if exists $already_printed{$name};
-    $already_printed{$name} = undef;
+    my ($name, $already_printed) = @_;
+    $already_printed //= {};
+    return if exists $already_printed->{$name};
+    $already_printed->{$name} = undef;
     if(defined $reffed{$name}) {
-        foreach(@{$reffed{$name}}) { $already_printed{$_} = undef; }
+        # Not printing twice if also in wanted noweb-ref (included codeblocks can be printed twice).
+        foreach(@{$reffed{$name}}) { $already_printed->{$_} = undef; }
     }
     print_codeblock_rec($name, '', 0);
 };
@@ -305,6 +305,7 @@ sub print_codeblock {
 ###########################
 # Putting it all together #
 ###########################
+my $already_printed = {};
 if($tangle) { # Only takes noweb dependencies into account.
     while(my ($name, $destination) = each %global_tangle) {
         # Calling extract_dependencies like this, with only one code block name and no other arguments
@@ -317,7 +318,7 @@ if($tangle) { # Only takes noweb dependencies into account.
 
         select $dest_handle; # select STDOUT to restore STDOUT as the default output file.
         foreach(@{$dependencies->{noweb}}) {
-            print_codeblock($_);
+            print_codeblock($_, $already_printed);
         }
         close $dest_handle;
     }
@@ -334,5 +335,5 @@ foreach(@{$dependencies->{cpp}}) {
     say "#include <$_>";
 }
 foreach(@{$dependencies->{noweb}}) {
-    print_codeblock($_);
+    print_codeblock($_, $already_printed);
 }
