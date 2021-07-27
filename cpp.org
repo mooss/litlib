@@ -2107,7 +2107,8 @@ sequence::operator&<sequence::operator&<main()::<lambda(const auto:14&)>, void (
 #+end_src
 
 
-** Nothing
+** Pure functions
+*** Nothing
 
 This lambda does nothing, no matter what you give it. It's my favourite.
 #+name: nothing
@@ -2132,6 +2133,16 @@ Nothing to see.
 #+end_src
 
 In all seriousness, this is very useful when an interface expects a callback but no side effect is needed.
+
+*** Identity
+
+#+name: identity
+#+begin_src cpp
+struct identity {
+    template<class T> T& operator()(T& arg) const {return arg;}
+    template<class T> const T& operator()(const T& arg) const {return arg;}
+};
+#+end_src
 
 
 * Various utilities
