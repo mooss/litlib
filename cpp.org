@@ -2027,60 +2027,83 @@ struct xy_coords {
 
 * Functional programming
 
-** Function sequence
+** Functional operators
 
-This struct stores references of callable that can then be sequentially called as if there was only one callable.
+This section defines binary operators that can be used to cobble functions together.
+The idea (and the implementation of the first operator) was taken from http://cpptruths.blogspot.com/2016/12/folding-functions.html.
 
-Some notes:
- - Ideally the functions would be stored by value when receiving a rvalue reference but I don't know how to do that right now.
-   This means that the functions must be stored elsewhere.
- - All arguments are passed by reference.
+*** Composition
 
-#+name: funseq
-#+begin_src cpp
-template<class... Functions>
-struct funseq {
-    std::tuple<Functions&...> functions;
+This can be used to feed the result of one function into the next.
 
-    funseq(Functions&... _functions):
-        functions(_functions...)
-    {}
-
-    template<class... Args>
-    void operator()(Args&... args) {
-        foreach_tuple([&](auto& fun) {fun(args...);}, functions);
-    }
-};
+#+name: compose
+#+begin_src cpp :minipage
+namespace compose {
+template<class F, class G> auto operator |(F&& f, G&& g) {
+    return [f, g](auto a) {return g(f(a));};
+}
+}
 #+end_src
-#+depends:funseq :noweb foreach_tuple :cpp tuple
 
-Usage:
-#+begin_src cpp :eval no-export :exports both
-<<include(":noweb print funseq")>>
+*** Sequence
+
+Since this operator does not return anything, it is only useful for the side effects.
+
+#+name: sequence
+#+begin_src cpp :minipage
+namespace sequence {
+template<class F, class G> auto operator &(F&& f, G&& g) {
+    return [f, g](auto a) {f(a); g(a);};
+}
+}
+#+end_src
+
+*** Usage
+
+#+begin_src cpp :eval no-export :exports both :wrap "src default"
+<<include(":noweb print print_size compose sequence")>>
+
+int square(int x) {return x * x;}
+
+struct plusx {
+    int x;
+    int operator()(int y) const {return x + y;}
+};
 
 void print_lost(const char* ignore) {
     print{4, 8, 15, 16, 23, 42};
 }
 
 struct print_chevron {
-    void operator()(auto& el) {
-        print(el, " <");
+    void operator()(auto& el) const {
+        print{el, " <"};
     }
 };
 
 int main() {
-    auto print_pipes = [](const auto& el) {print(el, "||");};
-    print_chevron chev{};
-    funseq piloch(chev, print_pipes, print_lost);
-    piloch("constant");
+    using namespace compose;
+    using namespace sequence;
+    auto square_plus3 = square | [](int x) {return x + 2;} | plusx{1};
+    auto piloch = [](const auto& el){print{el, "||"};} & print_lost & print_chevron{};
+
+    print{"2 * 2 + 3 =", square_plus3(2)};
+    piloch("sequence");
+    print{};
+    print_size(square_plus3);
+    print_size(piloch);
 }
 #+end_src
 
+
 #+RESULTS:
-#+begin_src text :minipage
-constant  <
-constant ||
+#+begin_src default
+2 * 2 + 3 = 37
+sequence ||
 4 8 15 16 23 42
+sequence  <
+
+compose::operator|<compose::operator|<compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>, int (&)(int)>(compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>&&, int (&)(int))::<lambda(auto:11)>, plusx>(compose::operator|<compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>, int (&)(int)>(compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>&&, int (&)(int))::<lambda(auto:11)>&&, plusx&&)::<lambda(auto:11)> -> 32 bytes (256 bits)
+sequence::operator&<sequence::operator&<main()::<lambda(const auto:14&)>, void (&)(const char*)>(main()::<lambda(const auto:14&)>&&, void (&)(const char*))::<lambda(auto:12)>, print_chevron>(sequence::operator&<main()::<lambda(const auto:14&)>, void (&)(const char*)>(main()::<lambda(const auto:14&)>&&, void (&)(const char*))::<lambda(auto:12)>&&, print_chevron&&)::<lambda(auto:12)> -> 24 bytes (192 bits)
 #+end_src
 
 
