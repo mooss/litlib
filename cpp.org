@@ -2084,6 +2084,33 @@ constant ||
 #+end_src
 
 
+** Nothing
+
+This lambda does nothing, no matter what you give it. It's my favourite.
+#+name: nothing
+#+begin_src cpp
+auto nothing = []<class... T>(const T&...) {};
+#+end_src
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print nothing")>>
+
+int main() {
+    print{"Nothing to see."};
+    nothing(4, 8, 15, 16, 23, 42);
+    nothing();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+Nothing to see.
+#+end_src
+
+In all seriousness, this is very useful when an interface expects a callback but no side effect is needed.
+
+
 * Various utilities
 
 This section is dedicated to utilities without overarching themes.
@@ -2966,32 +2993,6 @@ ScaleType& transform_scaled_interpolation(
 }
 #+end_src
 #+depends:transform_scaled_interpolation :noweb scale_converter
-
-
-** Nothing
-
-This lambda does nothing, no matter what you give it. It's my favourite.
-#+name: nothing
-#+begin_src cpp
-auto nothing = []<class... T>(const T&...) {};
-#+end_src
-
-#+begin_src cpp :eval no-export :exports both
-<<include(":noweb print nothing")>>
-
-int main() {
-    print{"Nothing to see."};
-    nothing(4, 8, 15, 16, 23, 42);
-    nothing();
-}
-#+end_src
-
-#+RESULTS:
-#+begin_src text :minipage
-Nothing to see.
-#+end_src
-
-In all seriousness, this is very useful when an interface expects a callback but no side effect is needed.
 
 
 * Cool tricks (don't try this at home)
