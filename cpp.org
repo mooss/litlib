@@ -2097,12 +2097,12 @@ int main() {
 
 #+RESULTS:
 #+begin_src default
-2 * 2 + 3 = 37
+2 * 2 + 3 = 7
 sequence ||
 4 8 15 16 23 42
 sequence  <
 
-compose::operator|<compose::operator|<compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>, int (&)(int)>(compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>&&, int (&)(int))::<lambda(auto:11)>, plusx>(compose::operator|<compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>, int (&)(int)>(compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>&&, int (&)(int))::<lambda(auto:11)>&&, plusx&&)::<lambda(auto:11)> -> 32 bytes (256 bits)
+compose::operator|<compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>, plusx>(compose::operator|<int (&)(int), main()::<lambda(int)> >(int (&)(int), main()::<lambda(int)>&&)::<lambda(auto:11)>&&, plusx&&)::<lambda(auto:11)> -> 24 bytes (192 bits)
 sequence::operator&<sequence::operator&<main()::<lambda(const auto:14&)>, void (&)(const char*)>(main()::<lambda(const auto:14&)>&&, void (&)(const char*))::<lambda(auto:12)>, print_chevron>(sequence::operator&<main()::<lambda(const auto:14&)>, void (&)(const char*)>(main()::<lambda(const auto:14&)>&&, void (&)(const char*))::<lambda(auto:12)>&&, print_chevron&&)::<lambda(auto:12)> -> 24 bytes (192 bits)
 #+end_src
 
