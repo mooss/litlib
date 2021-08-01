@@ -766,7 +766,7 @@ test_find_endquote('"Mind the \\" backslashes".')
 
 *** Ignore bytes
 
-Returns the position of the first character of =str= different from =char=, if any.
+Returns the position of the first character of =str= different from =byte=, if any.
 Otherwise returns -1.
 #+name: skipbyte
 #+begin_src lua :eval never
