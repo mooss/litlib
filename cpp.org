@@ -1232,6 +1232,54 @@ int main() {
 meta::list<float, int, std::allocator<int> >
 #+end_src
 
+*** Reversal
+
+#+name: meta::reverse
+#+begin_src cpp
+namespace meta {
+template<class... Typelist>
+struct reverse_impl;
+
+template<class Head>
+struct reverse_impl<Head> {
+    using type = list<Head>;
+};
+
+template<class Head, class...Tail>
+struct reverse_impl<Head, Tail...> {
+    using type = cat<typename reverse_impl<Tail...>::type, Head>;
+};
+
+template<class... Elements>
+struct reverse_impl<list<Elements...>> {
+    using type = reverse_impl<Elements...>::type;
+};
+
+template<class... Elements>
+using reverse = reverse_impl<Elements...>::type;
+}
+#+end_src
+#+depends:meta::reverse :noweb meta::list meta::cat
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb out print_type meta::reverse")>>
+
+int main() {
+    using reversed = meta::reverse<int, float, char>;
+    out("Reversed:   ");
+    print_type<reversed>();
+    out("Unreversed: ");
+    print_type<meta::reverse<reversed>>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+Reversed:   meta::list<char, float, int>
+Unreversed: meta::list<int, float, char>
+#+end_src
+
 *** Apply an operation to all the types
 
 This is similar to a =map= function, except that instead of applying a function to every element of a data structure, a template template is applied to every type in the metalist.
