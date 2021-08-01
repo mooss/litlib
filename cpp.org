@@ -3443,3 +3443,174 @@ What I hoped was that returning a named volatile would not construct a plain obj
 Some lessons learned:
  - RVO can indeed be bypassed by returning a named volatile.
  - It can apparently be bypassed in a similar way with =std::move= but with a compiler warning telling you not to do that.
+
+
+** Dynasty
+
+The =dynasty= type is a way to create a chain of inheritance using CRTP.
+The syntax for using it is =dynasty<founder, member1, member2, ..., memberN>=.
+
+The use case is to define a founder type, which holds all the data as well as common operations.
+Subsequents data-free members can be added to the =dynasty=, supplying it with additional operations.
+In the end, this provides an easy way to define a serie of advanced behaviours to a base type.
+
+The non-founding members of a dynasty must provide a templated =heir= that will inherit from its single template parameter.
+Here is an example of such a member:
+#+begin_src cpp
+struct example {
+    template<class Ancestor>
+    struct heir: Ancestor {
+        void out() {print{this->repr()};}
+    };
+};
+#+end_src
+
+In the implementation, the list of members of this dynasty is reversed so that when using =dynasty=, the inheritance is defined left to right rather than right to left.
+The right to left definition would otherwise be forced on us because of the fact that variadic template parameters must apparently appear last (I could not make =struct dynasty<Ancestors..., Ruler>= work).
+
+#+name: dynasty
+#+begin_src cpp
+namespace dynasty_impl {
+template<class... Ancestors> struct reversed_dynasty;
+
+template<class Founder>
+struct reversed_dynasty<Founder>: public Founder {
+    using founder = Founder;
+    reversed_dynasty(Founder&& f):
+        Founder(std::move(f))
+    {}
+};
+
+template<class Ruler, class... Ancestors>
+struct reversed_dynasty<Ruler, Ancestors...>: Ruler::heir<reversed_dynasty<Ancestors...>> {
+    using super = typename Ruler::heir<reversed_dynasty<Ancestors...>>;
+    using founder = super::founder;
+    reversed_dynasty(super::founder&& f):
+        super(std::move(f))
+    {}
+};
+
+template<class... Members>
+using unreversed_dynasty = meta::steal<reversed_dynasty, meta::reverse<Members...>>;
+
+template<class Founder, class... Members>
+struct dynasty: unreversed_dynasty<Founder, Members...> {
+    using super = unreversed_dynasty<Founder, Members...>;
+    using founder = super::founder;
+    dynasty(founder&& f):
+        super(std::move(f))
+    {}
+};
+}
+
+template<class... Members>
+using dynasty = dynasty_impl::dynasty<Members...>;// meta::steal<dynasty_impl::dynasty, meta::reverse<Members...>>;
+#+end_src
+#+depends:dynasty :noweb meta::steal meta::reverse
+
+*** Lineage
+
+=dynasty= can be inconvenient to use because the members must be wrapped in an external type, which is not always needed.
+When that is the case, =lineage= can take care of wrapping its members in a struct that will provide the =heir=.
+
+#+name: lineage
+#+begin_src cpp
+namespace lineage_impl {
+template<template <class> class Member>
+struct wrap_heir {
+    template<class Ancestor>
+    using heir = Member<Ancestor>;
+};
+
+template<template<class> class... Members>
+struct heir_wrapper;
+
+template<template <class> class Member>
+struct heir_wrapper<Member> {
+    using type = meta::list<wrap_heir<Member>>;
+};
+
+template<template <class> class Head, template <class> class... Tail>
+struct heir_wrapper<Head, Tail...> {
+    using type = meta::cat<wrap_heir<Head>, typename heir_wrapper<Tail...>::type>;
+};
+}
+
+template<class Founder, template <class> class... UnwrappedAncestors>
+using lineage = meta::steal<
+    dynasty_impl::dynasty,
+    meta::cat<Founder, typename lineage_impl::heir_wrapper<UnwrappedAncestors...>::type>
+>;
+#+end_src
+#+depends:tmpl_dynasty :noweb meta::list meta::cat dynasty meta::reverse
+
+*** Usage
+
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print print_size dynasty lineage :cpp string")>>
+
+struct presuf {
+    const std::string pref;
+    const std::string suff;
+    presuf(const std::string& a, const std::string& b):
+        pref(a), suff(b)
+    {}
+    std::string op(const std::string& arg) const {return pref + arg + suff;}
+};
+
+struct st {
+    template<class Ancestor>
+    struct heir: Ancestor {
+        void act() const {
+            print{this->op(" 4 8 15 16 23 42")};
+        }
+    };
+};
+
+struct add_newline {
+    template<class Ancestor>
+    struct heir: Ancestor {
+        void act() const {
+            Ancestor::act();
+            print{};
+        }
+    };
+};
+
+template<class Ancestor>
+struct stt: Ancestor {
+    void act() const {
+        print{this->op(" act")};
+    }
+};
+
+template<class Ancestor>
+struct stb: Ancestor {
+    void perform() const {
+        print{this->op(" perform")};
+    }
+};
+
+int main() {
+    dynasty<presuf, st, add_newline> lost({"lost", " xxx"});
+    lost.act();
+    lineage<presuf, stt, stb> last({"last", " zzz"});
+    last.act();
+    last.perform();
+    print{};
+    print_size(lost); print_size(last);
+    print_size<std::string>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+lost 4 8 15 16 23 42 xxx
+
+last act zzz
+last perform zzz
+
+dynasty_impl::dynasty<presuf, st, add_newline> -> 64 bytes (512 bits)
+dynasty_impl::dynasty<presuf, lineage_impl::wrap_heir<stt>, lineage_impl::wrap_heir<stb> > -> 64 bytes (512 bits)
+std::__cxx11::basic_string<char> -> 32 bytes (256 bits)
+#+end_src
