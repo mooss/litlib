@@ -1207,8 +1207,13 @@ struct cat_impl<Element, list<Args...>> {
     using type = list<Element, Args...>;
 };
 
-template<typename Element, typename Typelist>
-using cat = cat_impl<Element, Typelist>::type;
+template<typename Element, typename... Args>
+struct cat_impl<list<Args...>, Element> {
+    using type = list<Args..., Element>;
+};
+
+template<typename Left, typename Right>
+using cat = cat_impl<Left, Right>::type;
 } // namespace meta
 #+end_src
 #+depends:meta::cat :noweb meta::list
