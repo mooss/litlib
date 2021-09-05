@@ -1603,7 +1603,7 @@ template<typename T>
 class inventory {
   public:
     using warehouse = std::list<T>;
-    using handle = warehouse::iterator;
+    using handle = typename warehouse::iterator;
 
     template<typename... Args>
     handle store(Args&&... args) {
