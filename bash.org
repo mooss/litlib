@@ -15,10 +15,8 @@ The trick is to use the noweb arguments syntax to initialise variables.
 The code block below will parse the noweb variables inside the =$noweb= variable and instantiate them.
 It was not made into a function because I failed to make the =declare='d variables escape the function scope.
 #+begin_src bash :eval never :noweb-ref load-noweb-impl :minipage
-if [ -n "$noweb" ]
-then
-    while IFS= read -r -d $'\0' definition
-    do
+if [ -n "$noweb" ]; then
+    while IFS= read -r -d $'\0' definition; do
         declare "$definition"
     done < <(echo "$noweb" | sedrex)
 fi
@@ -191,8 +189,7 @@ Usage:
 noweb=":lost 4 8 15 16 23 42 :last"
 <<noweb-suite()>>
 
-for param in lost last least
-do
+for param in lost last least; do
     valued $param && echo $param is defined to "\`${!param}\`"
     empty $param && echo $param is empty
     ! declared $param && echo $param was not declared
@@ -214,8 +211,7 @@ least was not declared
 Assertion are implemented as a very simple function executing its argument and exiting with an error message shoud this execution return an error.
 #+begin_src bash :noweb-ref noweb-suite-impl :minipage
 function assert() {
-    if ! "$@"
-    then
+    if ! "$@"; then
         echo "Assertion failed: \`$@\`."
         exit
     fi
@@ -252,8 +248,7 @@ A newline is added before the exit message because it is susceptible to span mul
 #+begin_src bash :noweb-ref noweb-suite-impl :minipage
 function assert_no_error() {
     status=$?
-    if test $status -ne 0
-    then
+    if test $status -ne 0; then
         echo "Exit status is non zero ($status):
 $@."
         exit
@@ -284,8 +279,7 @@ Applies an assertion to several parameters.
 #+begin_src bash :noweb-ref noweb-suite-impl :minipage
 function assert_chain() {
     predicate="$1"; shift
-    while test $# -ge 1
-    do
+    while test $# -ge 1; do
         assert $predicate $1; shift
     done
 }
