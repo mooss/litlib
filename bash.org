@@ -168,14 +168,14 @@ Tools to perform some amount of verification and error handling are discussed in
 
 Where the previous section laid out the bases of an argument processing system by establishing a mechanism allowing to easily define variables, this one builds upon it with tools to manipulate those variables.
 
-#+depends:noweb-suite :noweb load-noweb-impl
+#+depends:noweb-suite :noweb load-noweb-impl assertions
 
 ** Predicates on indirected variables
 
 =declared=, =empty= and =valued= are using indirection to test against the value of the variable whose name is contained in their first argument.
 For example, if =$lost= is =4 8 15 16 23 42= when =defined lost= is called, the value of =$1= is the string ~"lost"~ and by indirection the value of ="${!1}"= is the value of =$lost= (=4 8 15 16 23 42=).
 
-#+begin_src bash :noweb-ref noweb-suite :minipage
+#+begin_src bash :noweb-ref assertions :minipage
 function declared() {
     test -n "${!1}"
 }
@@ -213,7 +213,7 @@ least was not declared
 *** =assert=
 
 Assertion are implemented as a very simple function executing its argument and exiting with an error message shoud this execution return an error.
-#+begin_src bash :noweb-ref noweb-suite :minipage
+#+begin_src bash :noweb-ref assertions :minipage
 function assert() {
     if ! "$@"; then
         echo "Assertion failed: \`$@\`."
@@ -249,7 +249,7 @@ It can take a message because I know of no way to get the last command called so
 
 A newline is added before the exit message because it is susceptible to span multiple lines.
 
-#+begin_src bash :noweb-ref noweb-suite :minipage
+#+begin_src bash :noweb-ref assertions :minipage
 function assert-no-error() {
     status=$?
     if test $status -ne 0; then
@@ -280,7 +280,7 @@ false.
 
 Applies an assertion to several parameters.
 
-#+begin_src bash :noweb-ref noweb-suite :minipage
+#+begin_src bash :noweb-ref assertions :minipage
 function assert-chain() {
     predicate="$1"; shift
     while test $# -ge 1; do
