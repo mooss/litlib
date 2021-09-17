@@ -242,15 +242,15 @@ lost is declared
 Assertion failed: `empty lost`.
 #+end_src
 
-*** =assert_no_error=
+*** =assert-no-error=
 
 This hardcoded assertion uses =$?= to verify that the last command did not result in an error.
-It can take a message because I know of no way to get the last command called so in case of multiple =assert_no_error=, the one that failed would be less obvious.
+It can take a message because I know of no way to get the last command called so in case of multiple =assert-no-error=, the one that failed would be less obvious.
 
 A newline is added before the exit message because it is susceptible to span multiple lines.
 
 #+begin_src bash :noweb-ref noweb-suite :minipage
-function assert_no_error() {
+function assert-no-error() {
     status=$?
     if test $status -ne 0; then
         echo "Exit status is non zero ($status):
@@ -264,9 +264,9 @@ Usage:
 #+begin_src bash :exports both :minipage
 <<include("noweb-suite")>>
 true
-assert_no_error true
+assert-no-error true
 false
-assert_no_error false
+assert-no-error false
 true
 #+end_src
 
@@ -281,7 +281,7 @@ false.
 Applies an assertion to several parameters.
 
 #+begin_src bash :noweb-ref noweb-suite :minipage
-function assert_chain() {
+function assert-chain() {
     predicate="$1"; shift
     while test $# -ge 1; do
         assert $predicate $1; shift
@@ -293,9 +293,9 @@ Usage:
 #+begin_src bash
 noweb=":four :eight :sixteen 16"
 <<include("noweb-suite")>>
-assert_chain declared four eight sixteen
+assert-chain declared four eight sixteen
 echo All are defined.
-assert_chain empty four eight sixteen
+assert-chain empty four eight sixteen
 echo All are empty.
 #+end_src
 
@@ -311,9 +311,9 @@ Assertion failed: `empty sixteen`.
 ** Capture =stderr=
 
 This small helper saves the output of a command inside the variable =$stderr=.
-#+name: capture_stderr
+#+name: capture-stderr
 #+begin_src bash :minipage
-function capture_stderr() {
+function capture-stderr() {
     buffer=$(mktemp)
     "$@" 2> "$buffer"
     stderr=$(cat "$buffer")
@@ -326,7 +326,7 @@ Notes:
 
 Usage:
 #+begin_src bash :exports both :minipage
-<<capture_stderr>>
+<<capture-stderr>>
 function error_prone() {
     echo 'Everything is well.'
     >&2 echo 'Terrible things are happening.'
@@ -337,7 +337,7 @@ function error_prone() {
 }
 
 echo stdout:
-capture_stderr error_prone
+capture-stderr error_prone
 echo
 echo stderr:
 echo "$stderr"
