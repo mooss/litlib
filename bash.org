@@ -352,3 +352,45 @@ Terrible things are happening.
 I must have broken a mirror.
 Oh my god ITS ALIVE!
 #+end_src
+
+
+** Failure functions
+
+Print to stderr:
+#+name: error
+#+begin_src bash
+function error() {
+    >&2 echo "$@"
+}
+#+end_src
+
+Exit with an error and print message to stderr:
+#+name: die
+#+begin_src bash
+function die() {
+    error_code=$1; shift
+    error "$@"
+    exit $error_code
+}
+#+end_src
+#+depends:die :noweb error
+
+Exit with an error but print to stdout:
+#+name: fail
+#+begin_src bash
+function fail() {
+    error_code=$1; shift
+    echo "$@"
+    exit $error_code
+}
+#+end_src
+
+Exit without error and print to stdout:
+#+name: stop
+#+begin_src bash
+function stop() {
+    echo "$@"
+    exit
+}
+#+end_src
+
