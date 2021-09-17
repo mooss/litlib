@@ -397,3 +397,72 @@ function stop() {
 }
 #+end_src
 
+
+
+* Experimental ideas
+:PROPERTIES:
+:header-args:
+:END:
+
+This section is a dumping ground for ideas that have not really been tested yet but that might eventually prove useful or inspirational.
+
+** Include as Heredoc
+
+Including blocks as Heredocs can allow a great deal of flexibility when manipulating code blocks in bash.
+
+#+name: hereclude
+#+begin_src bash :var __blocks_to_include="" __cmd="" __post="" :wrap src bash
+# Random string (tr | head) from https://stackoverflow.com/a/62087619.
+unique_identifier="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 20)$(date '+%s%N')"
+__org_sources="wasm.org"
+echo "$__cmd <<$unique_identifier $__post"
+./include.pl bash.org ":noweb $__blocks_to_include"
+echo "$unique_identifier"
+#+end_src
+
+*** Usage
+
+This block will be used to illustrate =hereclude='s usage:
+#+name: lost-numbers
+#+begin_src text
+4
+8
+15
+16
+23
+42
+#+end_src
+
+This is how a Heredoc inclusion of the block above would look like (this is just for illustration purposes):
+#+Call: hereclude("lost-numbers", "cat", "| sed 's|.*| -> &|' | nl -w1 -s ''")
+
+#+RESULTS:
+#+begin_src bash
+cat <<aIvAUYsycFzabSvgDunG1631900104698751394 | sed 's|.*| -> &|' | nl -w1 -s ''
+4
+8
+15
+16
+23
+42
+aIvAUYsycFzabSvgDunG1631900104698751394
+#+end_src
+
+The intended way to use =hereclude= is to call it directly inside a bash code block:
+
+#+begin_src bash
+echo Found the lost numbers:
+<<hereclude("lost-numbers", "cat", "| sed 's|.*| -> &|' | nl -w1 -s ''")>>
+#+end_src
+
+#+RESULTS:
+:results:
+Found the lost numbers:
+1 -> 4
+2 -> 8
+3 -> 15
+4 -> 16
+5 -> 23
+6 -> 42
+:end:
+
