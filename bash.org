@@ -5,6 +5,16 @@
 #+property: header-args:bash+ :noweb no-export
 #+options: ^:nil
 
+* Prelude
+
+** Code block inclusion
+
+#+name: include
+#+begin_src bash :var __blocks_to_include=""
+./include.pl bash.org ":noweb $__blocks_to_include"
+#+end_src
+
+
 * Noweb arguments
 
 I love Bash, especially when looking at it like a glue between modular utilities (pipes are such a simple yet incredibly powerful mechanism).
@@ -158,20 +168,14 @@ Tools to perform some amount of verification and error handling are discussed in
 
 Where the previous section laid out the bases of an argument processing system by establishing a mechanism allowing to easily define variables, this one builds upon it with tools to manipulate those variables.
 
-=noweb-suite= follows the same logic as =load-noweb= of using the include script to handle dependencies:
-#+name: noweb-suite
-#+begin_src bash :minipage
-./include.pl bash.org ':noweb noweb-suite-impl'
-#+end_src
-
-#+depends:noweb-suite-impl :noweb load-noweb-impl
+#+depends:noweb-suite :noweb load-noweb-impl
 
 ** Predicates on indirected variables
 
 =declared=, =empty= and =valued= are using indirection to test against the value of the variable whose name is contained in their first argument.
 For example, if =$lost= is =4 8 15 16 23 42= when =defined lost= is called, the value of =$1= is the string ~"lost"~ and by indirection the value of ="${!1}"= is the value of =$lost= (=4 8 15 16 23 42=).
 
-#+begin_src bash :noweb-ref noweb-suite-impl :minipage
+#+begin_src bash :noweb-ref noweb-suite :minipage
 function declared() {
     test -n "${!1}"
 }
@@ -187,7 +191,7 @@ Pandoc's syntax highlighting doesn't like this ="${!1}"= syntax, but in practice
 Usage:
 #+begin_src bash :exports both :minipage
 noweb=":lost 4 8 15 16 23 42 :last"
-<<noweb-suite()>>
+<<include("noweb-suite")>>
 
 for param in lost last least; do
     valued $param && echo $param is defined to "\`${!param}\`"
@@ -209,7 +213,7 @@ least was not declared
 *** =assert=
 
 Assertion are implemented as a very simple function executing its argument and exiting with an error message shoud this execution return an error.
-#+begin_src bash :noweb-ref noweb-suite-impl :minipage
+#+begin_src bash :noweb-ref noweb-suite :minipage
 function assert() {
     if ! "$@"; then
         echo "Assertion failed: \`$@\`."
@@ -225,7 +229,7 @@ Notes:
 Usage:
 #+begin_src bash :exports both :minipage
 noweb=":one :two :lost 4 8 15 16 23 42 :last"
-<<noweb-suite()>>
+<<include("noweb-suite")>>
 assert declared lost
 echo lost is declared
 assert empty lost
@@ -245,7 +249,7 @@ It can take a message because I know of no way to get the last command called so
 
 A newline is added before the exit message because it is susceptible to span multiple lines.
 
-#+begin_src bash :noweb-ref noweb-suite-impl :minipage
+#+begin_src bash :noweb-ref noweb-suite :minipage
 function assert_no_error() {
     status=$?
     if test $status -ne 0; then
@@ -258,7 +262,7 @@ $@."
 
 Usage:
 #+begin_src bash :exports both :minipage
-<<noweb-suite()>>
+<<include("noweb-suite")>>
 true
 assert_no_error true
 false
@@ -276,7 +280,7 @@ false.
 
 Applies an assertion to several parameters.
 
-#+begin_src bash :noweb-ref noweb-suite-impl :minipage
+#+begin_src bash :noweb-ref noweb-suite :minipage
 function assert_chain() {
     predicate="$1"; shift
     while test $# -ge 1; do
@@ -288,7 +292,7 @@ function assert_chain() {
 Usage:
 #+begin_src bash
 noweb=":four :eight :sixteen 16"
-<<noweb-suite()>>
+<<include("noweb-suite")>>
 assert_chain declared four eight sixteen
 echo All are defined.
 assert_chain empty four eight sixteen
@@ -300,7 +304,6 @@ echo All are empty.
 All are defined.
 Assertion failed: `empty sixteen`.
 #+end_src
-
 
 
 * Other utilities
