@@ -1,13 +1,12 @@
 #!/usr/bin/env perl
 
-# This poorly put together script parses a file (supposedly a org-mode file),
-# extracts the dependencies defined in it, attempts to match them with the arguments
-# given to it (:cpp and :noweb) and prints out the resulting C++ code (or the first
-# error that occured).
+# This script parses a file (supposedly a org-mode file), extracts the dependencies
+# defined in it, attempts to match them with the arguments given to it and prints
+# out the resulting C++ code (or the first error that occured).
 
-# An "include as C string" feature (:c-string) and a tangle (:tangle) feature have
-# been hastily retrofitted in this script, making it look more and more like the
-# creature of Frankenstein.
+# An "include as C string" feature (:c-string), support for go imports (:go) and a
+# tangle (:tangle) feature have been hastily retrofitted in this script, making it
+# look more and more like the creature of Frankenstein.
 
 # There are certainly a lot of unknown caveats.
 # One I do know for sure is that =noweb-ref= in property drawers are not supported.
@@ -98,6 +97,7 @@ stop('At least one of the following flags is required: '
 # though I expect it will take a long time to replace it with a cleaner approach.
 
 # Extract individual flags.
+my $go = $flags{go} || [];
 my $cpp = $flags{cpp} || [];
 my $noweb = $flags{noweb} || [];
 my $c_string = $flags{'c-string'};
@@ -105,15 +105,15 @@ my $tangle = defined $flags{tangle};
 
 # Add additional filenames.
 if(defined $flags{defs}) {
-    # Deduplication should be put in place some day.
+    # Deduplication should be put in place some day, perhaps.
     $filenames .= ' ' . join(' ', @{$flags{defs}});
 }
 
-stop(':c-string is incompatible with :cpp, it should only be used with :noweb.')
-    if defined $c_string and @$cpp > 0;
+stop(':c-string is incompatible with :go and :cpp, it should only be used with :noweb.')
+    if defined $c_string and (@$go > 0 or @$cpp > 0);
 
-stop(':tangle is incompatible with :cpp and :noweb.')
-    if $tangle and (@$cpp > 0 or @$noweb > 0);
+stop(':tangle is incompatible with :go, :cpp and :noweb.')
+    if $tangle and (@$go > 0 or @$cpp > 0 or @$noweb > 0);
 
 # Apparently, it is considered "redefining" if I define a sub in an if and in its else, hence the closure.
 my $debug = sub {};
@@ -202,6 +202,7 @@ lines_and_blocks();
 ###########################
 # Dependencies resolution #
 ###########################
+my @SUPPORTED_LANGUAGES = ('go', 'cpp');
 sub extract_dependencies {
     my ($symbols, $dependencies, $seen) = @_;
     $dependencies //= {}; # // Is the defined-or operator. Using it like this amounts to giving a default value.
@@ -219,8 +220,10 @@ sub extract_dependencies {
             # I'm not sure why this script used to stop when no dependencies were declared.
             # stop("No dependencies declared for `$symbol`.") if !defined $deps;
 
-            foreach(@{$deps->{cpp}}) {
-                push @{$dependencies->{cpp}}, $_ if !$seen->{cpp}{$_}++;
+            foreach my $lang (@SUPPORTED_LANGUAGES) {
+                foreach(@{$deps->{$lang}}) {
+                    push @{$dependencies->{$lang}}, $_ if !$seen->{$lang}{$_}++;
+                }
             }
 
             # Code blocks must be included *after* their dependencies, but to avoid double inclusions,
@@ -345,14 +348,31 @@ if($tangle) { # Only takes noweb dependencies into account.
 }
 
 my ($dependencies, $seen) = extract_dependencies($noweb);
+sub add_to_dependencies {
+    my ($source, $lang) = @_;
+    foreach(@$source) {
+        push @{$dependencies->{$lang}}, $_ if !$seen->{$lang}{$_}++;
+    }
+};
+add_to_dependencies $cpp, 'cpp';
+add_to_dependencies $go, 'go';
 
-foreach(@$cpp) {
-    push @{$dependencies->{cpp}}, $_ if !$seen->{cpp}{$_}++;
+sub is_imported {
+    my $lang = shift // $_; # Default to $_ if no arguments.
+    return defined $dependencies->{$lang} and @{$dependencies->{$lang}} > 0
+};
+my @imported_languages = grep {is_imported} @SUPPORTED_LANGUAGES;
+if(@imported_languages > 1) {
+    my $l = join ', ', @imported_languages;
+    stop "Too many languages imported from ($l), there should be at most one.";
 }
 
 foreach(@{$dependencies->{cpp}}) {
     say "#include <$_>";
 }
+say "import (\n\t" . join("\n\t", map {"\"$_\""} sort @{$dependencies->{go}}) . "\n)\n"
+    if is_imported 'go';
+
 foreach(@{$dependencies->{noweb}}) {
     print_codeblock_once($_, $already_printed);
 }
