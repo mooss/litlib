@@ -77,7 +77,7 @@ stop("Usage: $0 filenames flags")
     if @ARGV != 2;
 
 stop 'You must provide flags using the noweb syntax.'
-    if $ARGV[1] eq '' or ! $ARGV[1] =~ '^:';
+    if $ARGV[1] eq '' || ! $ARGV[1] =~ '^:';
 
 my $filenames = $ARGV[0];
 my %flags = %{extract_parameters $ARGV[1]};
@@ -89,8 +89,8 @@ my @mandatory_flags = @inclusion_flags; push @mandatory_flags, @standalone_boole
 # Bad error message but it would be too much work to make it clearer.
 stop('At least one of the following flags is required: '
      . join(', ', map {':' . $_} @mandatory_flags) . '.')
-    if none(sub{defined $flags{$_[0]} and @{$flags{$_[0]}} > 0}, \@inclusion_flags)
-    and none(sub{defined $flags{$_[0]}}, \@standalone_boolean_flags);
+    if none(sub{defined $flags{$_[0]} && @{$flags{$_[0]}} > 0}, \@inclusion_flags)
+    && none(sub{defined $flags{$_[0]}}, \@standalone_boolean_flags);
 
 # The inclusion of a tangling operation in this script is dubious since that's not something an "include"
 # script should do but it was easy enough to put in place and include.pl is supposed to be temporary
@@ -110,10 +110,10 @@ if(defined $flags{defs}) {
 }
 
 stop(':c-string is incompatible with :go and :cpp, it should only be used with :noweb.')
-    if defined $c_string and (@$go > 0 or @$cpp > 0);
+    if defined $c_string && (@$go > 0 || @$cpp > 0);
 
 stop(':tangle is incompatible with :go, :cpp and :noweb.')
-    if $tangle and (@$go > 0 or @$cpp > 0 or @$noweb > 0);
+    if $tangle && (@$go > 0 || @$cpp > 0 || @$noweb > 0);
 
 # Apparently, it is considered "redefining" if I define a sub in an if and in its else, hence the closure.
 my $debug = sub {};
@@ -160,7 +160,7 @@ sub lines_and_blocks {
             if($global_lines[$num + 1] =~ /^\s*#\+begin_src/) {
                 stop "Duplicated named code block `$name`."
                     if $name ne 'include' # `include` is special because it's used as a shortcut for this script.
-                    and exists $global_named_blocks{$name};
+                    && exists $global_named_blocks{$name};
                 $named{$num + 1} = $name;
                 push @{$global_named_blocks{$name}}, $num + 2;
             }
@@ -181,7 +181,7 @@ sub lines_and_blocks {
             stop "Dependency duplicate `$1`." if exists $global_dependencies{$1};
             $global_dependencies{$1} = extract_parameters($2);
 
-        } elsif($tangle and $line =~ /^\s*#\+tangle:([^\s]+)\s+(.*)/) {
+        } elsif($tangle && $line =~ /^\s*#\+tangle:([^\s]+)\s+(.*)/) {
             # Tangling has its own #+tangle: directive because org-mode has no way to resolve the #+depends:
             # syntax.
             # Thus it's better to bypass entirely the :tangle noweb argument.
@@ -359,7 +359,7 @@ add_to_dependencies $go, 'go';
 
 sub is_imported {
     my $lang = shift // $_; # Default to $_ if no arguments.
-    return defined $dependencies->{$lang} and @{$dependencies->{$lang}} > 0
+    return defined $dependencies->{$lang} && @{$dependencies->{$lang}} > 0
 };
 my @imported_languages = grep {is_imported} @SUPPORTED_LANGUAGES;
 if(@imported_languages > 1) {
