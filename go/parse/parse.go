@@ -86,7 +86,15 @@ func (ps Particles) Dump() {
 }
 
 // Parameters is metadata attached to a file or a particle.
-type Parameters map[string]Values
+// It is implemented as key-value pairs and not as a map in order to maintain
+// the order.
+// If performance becomes an issue, look into ordered map libraries.
+type Parameters []Parameter
+
+type Parameter struct {
+	Key    string
+	Values Values
+}
 
 // Values stores the values of a parameter.
 // Since a typical usage would result in less than 10 values, a slice of strings
@@ -94,9 +102,27 @@ type Parameters map[string]Values
 type Values []string
 
 // Has returns true if the given key is contained in the parameters.
-func (p Parameters) Has(key string) bool {
-	_, ok := p[key]
-	return ok
+func (ps Parameters) Has(key string) bool {
+	return ps.Get(key) != nil
+}
+
+func (ps Parameters) Get(key string) *Values {
+	for _, p := range ps {
+		if p.Key == key {
+			return &p.Values
+		}
+	}
+	return nil
+}
+
+// Add adds values to the given key, creating it if necessary.
+func (ps *Parameters) Add(key string, values Values) {
+	vp := ps.Get(key)
+	if vp == nil {
+		*ps = append(*ps, Parameter{key, values})
+	} else {
+		*vp = append(*vp, values...)
+	}
 }
 
 // CodeParticle represents code, content meant for machine consumption.

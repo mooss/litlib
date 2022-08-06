@@ -89,13 +89,13 @@ func ParseNowebArguments(args string) Parameters {
 
 	res := Parameters{}
 	if !strings.HasPrefix(args, ":") {
-		res[""] = spaces.Fields(defs[0])
+		res.Add("", spaces.Fields(defs[0]))
 	}
 	defs = defs[1:]
 
 	for _, argspec := range defs {
 		fields := spaces.Fields(argspec)
-		res[fields[0]] = append(res[fields[0]], fields[1:]...)
+		res.Add(fields[0], fields[1:])
 	}
 
 	return res
