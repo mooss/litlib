@@ -325,3 +325,7 @@ type Language struct {
 	Extensions  []string
 	Parser      Molecule
 }
+
+func (l Language) Parse(lines []string) (Particles, error) {
+	return l.Parser.Parse(lines)
+}

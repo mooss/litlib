@@ -31,8 +31,7 @@ func main() {
 	content, err := ioutil.ReadFile(filename)
 	nofail(err)
 
-	parser := parse.OrgLang.Parser
-	parsed, err := parser.Parse(strings.Split(string(content), "\n"))
+	parsed, err := parse.OrgLang.Parse(strings.Split(string(content), "\n"))
 	nofail(err)
 
 	parsed.Dump()
