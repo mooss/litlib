@@ -9,26 +9,26 @@ import (
 // Object string library //
 ///////////////////////////
 
-type str struct{ string }
+type str string
 
 func (p str) IsPrefix(s string) bool {
-	return strings.HasPrefix(s, p.string)
+	return strings.HasPrefix(s, string(p))
 }
 
 func (p str) StripLeftOf(s string) string {
-	return strings.TrimPrefix(s, p.string)
+	return strings.TrimPrefix(s, string(p))
 }
 
 func (set str) Trim(s string) string {
-	return strings.Trim(s, set.string)
+	return strings.Trim(s, string(set))
 }
 
 func (set str) TrimRight(s string) string {
-	return strings.TrimRight(s, set.string)
+	return strings.TrimRight(s, string(set))
 }
 
 func (set str) HasRune(r rune) bool {
-	for _, cr := range set.string {
+	for _, cr := range string(set) {
 		if cr == r {
 			return true
 		}
@@ -41,14 +41,14 @@ func (set str) Fields(s string) []string {
 }
 
 func (set str) First(s string) int {
-	return strings.IndexAny(s, set.string)
+	return strings.IndexAny(s, string(set))
 }
 
 // Intersects returns true when all runes in s are also in set.
 func (set str) Intersects(s string) bool {
 	// There is probably some trick to make this faster.
 	for _, r := range s {
-		for _, ref := range set.string {
+		for _, ref := range string(set) {
 			if ref != r {
 				return false
 			}
@@ -58,16 +58,21 @@ func (set str) Intersects(s string) bool {
 }
 
 func (sep str) Join(s ...string) string {
-	return strings.Join(s, sep.string)
+	return strings.Join(s, string(sep))
 }
 
-var spaces = str{" \t\n"}
+var spaces = str(" \t\n")
 
 // IDEA: object prefix and suffix library.
 
 ///////////////////////////
 // Object regexp library //
 ///////////////////////////
+
+// Unlike str, regex embeds the type it extends.
+// This is because I'm not sure of the implications of converting to the
+// underlying Regexp and taking a pointer to it.
+// Furthermore, unlike str I see no special interest in using a type definition.
 
 type regex struct{ *regexp.Regexp }
 

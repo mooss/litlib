@@ -10,11 +10,11 @@ import (
 ///////////////////
 
 var orgSectionRe = re(`^(\*+) (.+)$`)
-var orgBeginSrcPfx = str{"#+begin_src"}
-var orgEndSrcPfx = str{"#+end_src"}
-var orgPropertyPfx = str{"#+"}
-var orgBeginPfx = str{"#+begin_"}
-var orgEndPfx = str{"#+end_"}
+var orgBeginSrcPfx = str("#+begin_src")
+var orgEndSrcPfx = str("#+end_src")
+var orgPropertyPfx = str("#+")
+var orgBeginPfx = str("#+begin_")
+var orgEndPfx = str("#+end_")
 
 ////////////
 // Makers //
@@ -92,13 +92,13 @@ func OrgFuser(matter Particles) ([]string, error) {
 	for _, part := range matter {
 		switch p := part.ParticleImpl.(type) {
 		case CodeParticle:
-			begin := orgBeginSrcPfx.string + " " + p.Lang
+			begin := string(orgBeginSrcPfx) + " " + p.Lang
 			if len(p.Params) > 0 {
 				begin += " " + p.Params.FuseToNoweb()
 			}
 			res.Add(begin)
 			res.Add(p.Raw...)
-			res.Add(orgEndSrcPfx.string)
+			res.Add(string(orgEndSrcPfx))
 
 		case ProseParticle:
 			res.Add(p.Raw...)
@@ -117,9 +117,9 @@ func OrgFuser(matter Particles) ([]string, error) {
 			res.Add(p.Raw...)
 
 		case BlockParticle:
-			res.Add(orgBeginPfx.string + p.Type)
+			res.Add(string(orgBeginPfx) + p.Type)
 			res.Add(p.Raw...)
-			res.Add(orgEndPfx.string + p.Type)
+			res.Add(string(orgEndPfx) + p.Type)
 
 		default:
 			return nil, fmt.Errorf("no org fuser for %T", part.ParticleImpl)
