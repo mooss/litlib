@@ -13,6 +13,8 @@ var orgSectionRe = re(`^(\*+) (.+)$`)
 var orgBeginSrcPfx = str{"#+begin_src"}
 var orgEndSrcPfx = str{"#+end_src"}
 var orgPropertyPfx = str{"#+"}
+var orgBeginPfx = str{"#+begin_"}
+var orgEndPfx = str{"#+end_"}
 
 ////////////
 // Makers //
@@ -25,6 +27,14 @@ func OrgCodeMk(lines []string) ParticleImpl {
 		Raw:    lines[1 : len(lines)-1],
 		Lang:   lang,
 		Params: params,
+	}
+}
+
+// OrgBlockMk makes a block particle from Org lines.
+func OrgBlockMk(lines []string) ParticleImpl {
+	return BlockParticle{
+		Raw:  lines[1 : len(lines)-1],
+		Type: orgBeginPfx.StripLeftOf(lines[0]),
 	}
 }
 
@@ -55,6 +65,14 @@ var OrgMolecule = Molecule{
 		Bake: NoBk,
 		Make: OrgCodeMk,
 	},
+	Atom{ // Other kind of blocks, like quote blocks.
+		// This taker doesn't ensure that the begin and end block are matching.
+		// It will work fine assuming no wild ^#+end_ is present inside blocks.
+		// This is bound to happen eventually so I guess this is a TODO.
+		Take: BetweenTake(orgBeginPfx.IsPrefix, orgEndPfx.IsPrefix),
+		Bake: NoBk,
+		Make: OrgBlockMk,
+	},
 	Atom{ // Metadata about the document.
 		Take: FirstTake(orgPropertyPfx.IsPrefix),
 		Bake: orgPropertyPfx.StripLeftOf,
@@ -76,27 +94,32 @@ func OrgFuser(matter Particles) ([]string, error) {
 		case CodeParticle:
 			begin := orgBeginSrcPfx.string + " " + p.Lang
 			if len(p.Params) > 0 {
-				begin += " " + FuseNowebArguments(p.Params)
+				begin += " " + p.Params.FuseToNoweb()
 			}
-			res.add(begin)
-			res.add(p.Raw...)
-			res.add(orgEndSrcPfx.string)
+			res.Add(begin)
+			res.Add(p.Raw...)
+			res.Add(orgEndSrcPfx.string)
 
 		case ProseParticle:
-			res.add(p.Raw...)
+			res.Add(p.Raw...)
 
 		case MetadataParticle:
-			prop := "#+" + p.Name
+			prop := "#+" + p.Name + ":"
 			if p.RawValue != "" {
-				prop += ":" + p.RawValue
+				prop += p.RawValue
 			}
-			res.add(prop)
+			res.Add(prop)
 
 		case SectionParticle:
-			res.add(strings.Repeat("*", p.Level) + " " + p.Title)
+			res.Add(strings.Repeat("*", p.Level) + " " + p.Title)
 
 		case SpaceParticle:
-			res.add(p.Raw...)
+			res.Add(p.Raw...)
+
+		case BlockParticle:
+			res.Add(orgBeginPfx.string + p.Type)
+			res.Add(p.Raw...)
+			res.Add(orgEndPfx.string + p.Type)
 
 		default:
 			return nil, fmt.Errorf("no org fuser for %T", part.ParticleImpl)
@@ -140,17 +163,6 @@ func ParseNowebArguments(args string) Parameters {
 	}
 
 	return res
-}
-
-// FuseNowebArguments transforms parameters into a noweb string.
-func FuseNowebArguments(ps Parameters) string {
-	return strings.Join(Map(func(p Parameter) string {
-		res := ":" + p.Key
-		if len(p.Values) > 0 {
-			res += " " + strings.Join(p.Values, " ")
-		}
-		return res
-	}, ps), " ")
 }
 
 // ParseOrgBeginSrc parses the language and noweb parameters of a `#+begin_src`

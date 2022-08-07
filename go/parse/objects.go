@@ -81,6 +81,17 @@ func (r regex) Groups(s string) []string { return r.FindStringSubmatch(s) }
 
 type slice[T any] []T
 
-func (s *slice[T]) add(el ...T) {
+func slc[T any](el ...T) slice[T] {
+	return slice[T](el)
+}
+
+func pslc[T any](el ...T) *slice[T] {
+	res := slice[T](el)
+	return &res
+}
+
+// Add adds element at the end of the slice, returning a pointer to the slice.
+func (s *slice[T]) Add(el ...T) *slice[T] {
 	*s = append(*s, el...)
+	return s
 }

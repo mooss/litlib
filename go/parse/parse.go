@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"strings"
 )
 
 ////////////////////////
@@ -125,6 +126,48 @@ func (ps *Parameters) Add(key string, values Values) {
 	}
 }
 
+// FuseToNoweb fuses (aka serialises) parameters into noweb arguments.
+func (ps Parameters) FuseToNoweb() string {
+	return strings.Join(Map(func(p Parameter) string {
+		res := ":" + p.Key
+		if len(p.Values) > 0 {
+			res += " " + strings.Join(p.Values, " ")
+		}
+		return res
+	}, ps), " ")
+}
+
+// RawParticle is not a real particle but simply a shortcut to define particles
+// that hold nothing more than lines of text.
+// The type parameter T is just a shameful trick to generate aliases that are of
+// a different type but still benefit from the methods of the aliased type.
+type RawParticle[T any] struct {
+	Raw []string // Block content.
+}
+
+func (c RawParticle[T]) Repr() []string {
+	return c.Raw
+}
+
+// ProseParticle represents prose, content meant for human consumption.
+type ProseParticle = RawParticle[prose]
+type prose struct{}
+
+// SpaceParticle represents whitespace (space, newline and tab), content that
+// typically holds no particular meaning within a document.
+type SpaceParticle = RawParticle[space]
+type space struct{}
+
+// BlockParticle represents a special block qualified by its type.
+type BlockParticle struct {
+	Raw  []string
+	Type string
+}
+
+func (b BlockParticle) Repr() []string {
+	return *pslc("type=" + b.Type).Add(b.Raw...)
+}
+
 // CodeParticle represents code, content meant for machine consumption.
 type CodeParticle struct {
 	Raw    []string   // Code.
@@ -133,16 +176,7 @@ type CodeParticle struct {
 }
 
 func (c CodeParticle) Repr() []string {
-	return c.Raw
-}
-
-// ProseParticle represents prose, content meant for human consumption.
-type ProseParticle struct {
-	Raw []string // Unparsed lines, with Markup particles left as-is.
-}
-
-func (p ProseParticle) Repr() []string {
-	return p.Raw
+	return *pslc("lang="+c.Lang, "Params="+c.Params.FuseToNoweb()).Add(c.Raw...)
 }
 
 // MetadataParticle holds metadata about the document.
@@ -152,7 +186,7 @@ type MetadataParticle struct {
 }
 
 func (m MetadataParticle) Repr() []string {
-	return []string{m.Name + "=" + m.RawValue}
+	return slc(m.Name + "=" + m.RawValue)
 }
 
 // SectionParticle represents a section marker, symbolising a new branch of the
@@ -163,17 +197,7 @@ type SectionParticle struct {
 }
 
 func (m SectionParticle) Repr() []string {
-	return []string{"level=" + fmt.Sprint(m.Level) + ", title=" + m.Title}
-}
-
-// SpaceParticle represents whitespace (space, newline and tab), content that
-// typically holds no particular meaning within a document.
-type SpaceParticle struct {
-	Raw []string
-}
-
-func (v SpaceParticle) Repr() []string {
-	return v.Raw
+	return slc("level=" + fmt.Sprint(m.Level) + ", title=" + m.Title)
 }
 
 ////////////////////////
