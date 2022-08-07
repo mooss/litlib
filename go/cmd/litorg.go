@@ -37,5 +37,5 @@ func main() {
 	fused, err := parse.OrgLang.Fuse(parsed)
 	nofail(err)
 
-	fmt.Println(strings.Join(fused, "\n"))
+	fmt.Print(strings.Join(fused, "\n"))
 }
