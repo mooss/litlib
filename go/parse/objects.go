@@ -23,6 +23,10 @@ func (set str) Trim(s string) string {
 	return strings.Trim(s, set.string)
 }
 
+func (set str) TrimRight(s string) string {
+	return strings.TrimRight(s, set.string)
+}
+
 func (set str) HasRune(r rune) bool {
 	for _, cr := range set.string {
 		if cr == r {
@@ -53,6 +57,10 @@ func (set str) Intersects(s string) bool {
 	return true
 }
 
+func (sep str) Join(s ...string) string {
+	return strings.Join(s, sep.string)
+}
+
 var spaces = str{" \t\n"}
 
 // IDEA: object prefix and suffix library.
@@ -66,3 +74,13 @@ type regex struct{ *regexp.Regexp }
 func re(s string) regex                  { return regex{regexp.MustCompile(s)} }
 func (r regex) Match(s string) bool      { return r.MatchString(s) }
 func (r regex) Groups(s string) []string { return r.FindStringSubmatch(s) }
+
+//////////////////////////
+// Object slice library //
+//////////////////////////
+
+type slice[T any] []T
+
+func (s *slice[T]) add(el ...T) {
+	*s = append(*s, el...)
+}

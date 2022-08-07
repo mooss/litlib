@@ -1,6 +1,9 @@
 package parse
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 ///////////////////
 // Text matching //
@@ -31,14 +34,14 @@ func OrgPropertyMk(lines []string) ParticleImpl {
 	split := strings.SplitN(line, ":", 2)
 	res := MetadataParticle{Name: spaces.Trim(split[0])}
 	if len(split) == 2 {
-		res.RawValue = spaces.Trim(split[1])
+		res.RawValue = spaces.TrimRight(split[1])
 	}
 	return res
 }
 
-////////////
-// Parser //
-////////////
+///////////////////////////////////
+// High-level parsing and fusing //
+///////////////////////////////////
 
 // OrgMolecule is a sequence of atomic parsers able to parse an Org file.
 var OrgMolecule = Molecule{
@@ -65,11 +68,49 @@ var OrgMolecule = Molecule{
 	},
 }
 
+// OrgFuser can reconstruct the lines of an Org document from parsed particles.
+func OrgFuser(matter Particles) ([]string, error) {
+	res := slice[string]{}
+	for _, part := range matter {
+		switch p := part.ParticleImpl.(type) {
+		case CodeParticle:
+			begin := orgBeginSrcPfx.string + " " + p.Lang
+			if len(p.Params) > 0 {
+				begin += " " + FuseNowebArguments(p.Params)
+			}
+			res.add(begin)
+			res.add(p.Raw...)
+			res.add(orgEndSrcPfx.string)
+
+		case ProseParticle:
+			res.add(p.Raw...)
+
+		case MetadataParticle:
+			prop := "#+" + p.Name
+			if p.RawValue != "" {
+				prop += ":" + p.RawValue
+			}
+			res.add(prop)
+
+		case SectionParticle:
+			res.add(strings.Repeat("*", p.Level) + " " + p.Title)
+
+		case SpaceParticle:
+			res.add(p.Raw...)
+
+		default:
+			return nil, fmt.Errorf("no org fuser for %T", part.ParticleImpl)
+		}
+	}
+	return res, nil
+}
+
 // OrgLang holds information needed to manipulate Org files.
 var OrgLang = Language{
 	Identifiers: []string{"org"},
 	Extensions:  []string{".org"},
 	Parser:      OrgMolecule,
+	Fuse:        OrgFuser,
 }
 
 ///////////
@@ -99,6 +140,17 @@ func ParseNowebArguments(args string) Parameters {
 	}
 
 	return res
+}
+
+// FuseNowebArguments transforms parameters into a noweb string.
+func FuseNowebArguments(ps Parameters) string {
+	return strings.Join(Map(func(p Parameter) string {
+		res := ":" + p.Key
+		if len(p.Values) > 0 {
+			res += " " + strings.Join(p.Values, " ")
+		}
+		return res
+	}, ps), " ")
 }
 
 // ParseOrgBeginSrc parses the language and noweb parameters of a `#+begin_src`

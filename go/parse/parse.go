@@ -344,12 +344,18 @@ var SpaceAtom = Atom{
 // Languages //
 ///////////////
 
+// Fuser represents a function able to fuse particles together to form a
+// document.
+// Fusing is therefore the dual of parsing.
+type Fuser func(Particles) ([]string, error)
+
 // Language represents a language, be it prose-based or code-based, and all that
 // is needed to manipulate it.
 type Language struct {
 	Identifiers []string
 	Extensions  []string
 	Parser      Molecule
+	Fuse        Fuser
 }
 
 func (l Language) Parse(lines []string) (Particles, error) {

@@ -34,5 +34,8 @@ func main() {
 	parsed, err := parse.OrgLang.Parse(strings.Split(string(content), "\n"))
 	nofail(err)
 
-	parsed.Dump()
+	fused, err := parse.OrgLang.Fuse(parsed)
+	nofail(err)
+
+	fmt.Println(strings.Join(fused, "\n"))
 }
