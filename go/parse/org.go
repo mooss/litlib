@@ -20,29 +20,29 @@ var orgEndPfx = str("#+end_")
 // Makers //
 ////////////
 
-// OrgCodeMk makes a code particle from Org lines.
-func OrgCodeMk(lines []string) ParticleImpl {
+// OrgCodeMk makes a code element from Org lines.
+func OrgCodeMk(lines []string) ElementImpl {
 	lang, params := ParseOrgBeginSrc(lines[0])
-	return CodeParticle{
+	return CodeElement{
 		Raw:    lines[1 : len(lines)-1],
 		Lang:   lang,
 		Params: params,
 	}
 }
 
-// OrgBlockMk makes a block particle from Org lines.
-func OrgBlockMk(lines []string) ParticleImpl {
-	return BlockParticle{
+// OrgBlockMk makes a block element from Org lines.
+func OrgBlockMk(lines []string) ElementImpl {
+	return BlockElement{
 		Raw:  lines[1 : len(lines)-1],
 		Type: orgBeginPfx.StripLeftOf(lines[0]),
 	}
 }
 
-// OrgPropertyMk makes a metadata particle from an Org property line.
-func OrgPropertyMk(lines []string) ParticleImpl {
+// OrgPropertyMk makes a metadata element from an Org property line.
+func OrgPropertyMk(lines []string) ElementImpl {
 	line := lines[0]
 	split := strings.SplitN(line, ":", 2)
-	res := MetadataParticle{Name: spaces.Trim(split[0])}
+	res := MetadataElement{Name: spaces.Trim(split[0])}
 	if len(split) == 2 {
 		res.RawValue = spaces.TrimRight(split[1])
 	}
@@ -53,19 +53,19 @@ func OrgPropertyMk(lines []string) ParticleImpl {
 // High-level parsing and fusing //
 ///////////////////////////////////
 
-// OrgMolecule is a sequence of atomic parsers able to parse an Org file.
-var OrgMolecule = Molecule{
-	Atom{ // Section, hierarchical delimiter of the document.
+// OrgRules is a sequence of rules able to parse an Org file.
+var OrgRules = Rules{
+	Rule{ // Section, hierarchical delimiter of the document.
 		Take: FirstTake(orgSectionRe.Match),
 		Bake: NoBk,
 		Make: ReSectionMake(orgSectionRe),
 	},
-	Atom{ // Code, content meant for machine consumption.
+	Rule{ // Code, content meant for machine consumption.
 		Take: BetweenTake(orgBeginSrcPfx.IsPrefix, orgEndSrcPfx.IsPrefix),
 		Bake: NoBk,
 		Make: OrgCodeMk,
 	},
-	Atom{ // Other kind of blocks, like quote blocks.
+	Rule{ // Other kind of blocks, like quote blocks.
 		// This taker doesn't ensure that the begin and end block are matching.
 		// It will work fine assuming no wild ^#+end_ is present inside blocks.
 		// This is bound to happen eventually so I guess this is a TODO.
@@ -73,25 +73,25 @@ var OrgMolecule = Molecule{
 		Bake: NoBk,
 		Make: OrgBlockMk,
 	},
-	Atom{ // Metadata about the document.
+	Rule{ // Metadata about the document.
 		Take: FirstTake(orgPropertyPfx.IsPrefix),
 		Bake: orgPropertyPfx.StripLeftOf,
 		Make: OrgPropertyMk,
 	},
-	SpaceAtom, // Whitespace, content that can typically be ignored.
-	Atom{ // Prose, content meant for human consumption.
+	SpaceRule, // Whitespace, content that can typically be ignored.
+	Rule{ // Prose, content meant for human consumption.
 		Take: TrailingTake(spaces.Intersects, nor(orgSectionRe.Match, orgPropertyPfx.IsPrefix)),
 		Bake: NoBk,
 		Make: ProseMk,
 	},
 }
 
-// OrgFuser can reconstruct the lines of an Org document from parsed particles.
-func OrgFuser(matter Particles) ([]string, error) {
+// OrgFuser can reconstruct the lines of an Org document from parsed elements.
+func OrgFuser(matter Elements) ([]string, error) {
 	res := slice[string]{}
 	for _, part := range matter {
-		switch p := part.ParticleImpl.(type) {
-		case CodeParticle:
+		switch p := part.ElementImpl.(type) {
+		case CodeElement:
 			begin := string(orgBeginSrcPfx) + " " + p.Lang
 			if len(p.Params) > 0 {
 				begin += " " + p.Params.FuseToNoweb()
@@ -100,29 +100,29 @@ func OrgFuser(matter Particles) ([]string, error) {
 			res.Add(p.Raw...)
 			res.Add(string(orgEndSrcPfx))
 
-		case ProseParticle:
+		case ProseElement:
 			res.Add(p.Raw...)
 
-		case MetadataParticle:
+		case MetadataElement:
 			prop := "#+" + p.Name + ":"
 			if p.RawValue != "" {
 				prop += p.RawValue
 			}
 			res.Add(prop)
 
-		case SectionParticle:
+		case SectionElement:
 			res.Add(strings.Repeat("*", p.Level) + " " + p.Title)
 
-		case SpaceParticle:
+		case SpaceElement:
 			res.Add(p.Raw...)
 
-		case BlockParticle:
+		case BlockElement:
 			res.Add(string(orgBeginPfx) + p.Type)
 			res.Add(p.Raw...)
 			res.Add(string(orgEndPfx) + p.Type)
 
 		default:
-			return nil, fmt.Errorf("no org fuser for %T", part.ParticleImpl)
+			return nil, fmt.Errorf("no org fuser for %T", part.ElementImpl)
 		}
 	}
 	return res, nil
@@ -132,7 +132,7 @@ func OrgFuser(matter Particles) ([]string, error) {
 var OrgLang = Language{
 	Identifiers: []string{"org"},
 	Extensions:  []string{".org"},
-	Parser:      OrgMolecule,
+	Parser:      OrgRules,
 	Fuse:        OrgFuser,
 }
 

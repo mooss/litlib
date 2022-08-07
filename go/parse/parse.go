@@ -44,49 +44,49 @@ func Map[T, U any](fun func(T) U, source []T) []U {
 	return res
 }
 
-///////////////
-// Particles //
-///////////////
+//////////////
+// Elements //
+//////////////
 
-// Particle represents a part of a document that has been parsed.
-type Particle struct {
-	ParticleImpl
+// Element represents a part of a document that has been parsed.
+type Element struct {
+	ElementImpl
 }
 
-// ParticleImpl is the interface that a type must implement to be embeddable
-// into a Particle.
+// ElementImpl is the interface that a type must implement to be embeddable into
+// an Element.
 // This embedding step is done as a way to add convenience methods in a central
-// point, thus having less things to implement in each ParticleImpl.
-type ParticleImpl interface {
-	// Repr returns a simple representation of the particle.
+// point, thus having less things to implement in each ElementImpl.
+type ElementImpl interface {
+	// Repr returns a simple representation of the element.
 	Repr() []string
 }
 
-// Dump dumps the particle to stdout for debugging purposes.
-func (p Particle) Dump() {
-	fmt.Printf("%T {\n", p.ParticleImpl)
+// Dump dumps the Element to stdout for debugging purposes.
+func (p Element) Dump() {
+	fmt.Printf("%T {\n", p.ElementImpl)
 	for _, token := range p.Repr() {
 		fmt.Printf("    ^%s$\n", token)
 	}
 	fmt.Println("}")
 }
 
-// void returns true if this Particle holds no implementation.
-func (p Particle) void() bool {
-	return p.ParticleImpl == nil
+// void returns true if this Element holds no implementation.
+func (p Element) void() bool {
+	return p.ElementImpl == nil
 }
 
-// Particles is a sequence of parsed Particle.
-type Particles []Particle
+// Elements is a sequence of parsed Element.
+type Elements []Element
 
-// Dump dumps all the contained Particles to stdout for debugging pusposes.
-func (ps Particles) Dump() {
+// Dump dumps all the contained Elements to stdout for debugging purposes.
+func (ps Elements) Dump() {
 	for _, p := range ps {
 		p.Dump()
 	}
 }
 
-// Parameters is metadata attached to a file or a particle.
+// Parameters represents metadata attached to a file or a element.
 // It is implemented as key-value pairs and not as a map in order to maintain
 // the order.
 // If performance becomes an issue, look into ordered map libraries.
@@ -137,66 +137,66 @@ func (ps Parameters) FuseToNoweb() string {
 	}, ps), " ")
 }
 
-// RawParticle is not a real particle but simply a shortcut to define particles
+// RawElement is not a real element but simply a shortcut to define elements
 // that hold nothing more than lines of text.
 // The type parameter T is just a shameful trick to generate aliases that are of
 // a different type but still benefit from the methods of the aliased type.
-type RawParticle[T any] struct {
+type RawElement[T any] struct {
 	Raw []string // Block content.
 }
 
-func (c RawParticle[T]) Repr() []string {
+func (c RawElement[T]) Repr() []string {
 	return c.Raw
 }
 
-// ProseParticle represents prose, content meant for human consumption.
-type ProseParticle = RawParticle[prose]
+// ProseElement represents prose, content meant for human consumption.
+type ProseElement = RawElement[prose]
 type prose struct{}
 
-// SpaceParticle represents whitespace (space, newline and tab), content that
+// SpaceElement represents whitespace (space, newline and tab), content that
 // typically holds no particular meaning within a document.
-type SpaceParticle = RawParticle[space]
+type SpaceElement = RawElement[space]
 type space struct{}
 
-// BlockParticle represents a special block qualified by its type.
-type BlockParticle struct {
+// BlockElement represents a special block qualified by its type.
+type BlockElement struct {
 	Raw  []string
 	Type string
 }
 
-func (b BlockParticle) Repr() []string {
+func (b BlockElement) Repr() []string {
 	return *pslc("type=" + b.Type).Add(b.Raw...)
 }
 
-// CodeParticle represents code, content meant for machine consumption.
-type CodeParticle struct {
+// CodeElement represents code, content meant for machine consumption.
+type CodeElement struct {
 	Raw    []string   // Code.
 	Lang   string     // Identifier of the language.
 	Params Parameters // Parameters of the code block.
 }
 
-func (c CodeParticle) Repr() []string {
+func (c CodeElement) Repr() []string {
 	return *pslc("lang="+c.Lang, "Params="+c.Params.FuseToNoweb()).Add(c.Raw...)
 }
 
-// MetadataParticle holds metadata about the document.
-type MetadataParticle struct {
+// MetadataElement holds metadata about the document.
+type MetadataElement struct {
 	Name     string
 	RawValue string
 }
 
-func (m MetadataParticle) Repr() []string {
+func (m MetadataElement) Repr() []string {
 	return slc(m.Name + "=" + m.RawValue)
 }
 
-// SectionParticle represents a section marker, symbolising a new branch of the
+// SectionElement represents a section marker, symbolising a new branch of the
 // document tree.
-type SectionParticle struct {
+type SectionElement struct {
 	Title string
 	Level int
 }
 
-func (m SectionParticle) Repr() []string {
+func (m SectionElement) Repr() []string {
 	return slc("level=" + fmt.Sprint(m.Level) + ", title=" + m.Title)
 }
 
@@ -206,51 +206,51 @@ func (m SectionParticle) Repr() []string {
 
 type Taker func([]string) int
 type Baker func(string) string
-type Maker func([]string) ParticleImpl
+type Maker func([]string) ElementImpl
 
-// Atom is the smallest parsing entity.
-// It defines how to produce a given particle from raw text.
-type Atom struct {
+// Rule is the smallest parsing entity.
+// It defines how to produce a given element from raw text.
+type Rule struct {
 	Take Taker // How many lines to take.
 	Bake Baker // How to transform a single line.
-	Make Maker // How to make a particle with transformed lines.
-	// IDEA: MonoTake, MonoMake for more convenient definition of one line particles.
+	Make Maker // How to make a element with transformed lines.
+	// IDEA: MonoTake, MonoMake for more convenient definition of one line elements.
 	// IDEA: ErrorTake, ErrorMake to get explanations on why parsing failed.
 	//       Could provide useful error diagnostics.
 }
 
 // Emit tries to parse the given lines, returning the lines that were not taken
-// as well as the Particle that was made.
-// When the lines are not parsed, a void Particle is emmited.
+// as well as the Element that was made.
+// When the lines are not parsed, a void Element is emitted.
 // The error is always nil but it will be used at some point as a mechanism to
 // provide error diagnostics.
-func (a Atom) Emit(lines []string) ([]string, Particle, error) {
+func (a Rule) Emit(lines []string) ([]string, Element, error) {
 	take := a.Take(lines)
 	if take == 0 {
-		return lines, Particle{}, nil
+		return lines, Element{}, nil
 	}
-	return lines[take:], Particle{a.Make(Map(a.Bake, lines[:take]))}, nil
+	return lines[take:], Element{a.Make(Map(a.Bake, lines[:take]))}, nil
 }
 
-// Molecule is a group of Atom defining all the necessary logic to parse a
-// literate document.
-type Molecule []Atom
+// Rules represents a sequence of Rule defining all the logic necessary to parse
+// a literate document.
+type Rules []Rule
 
-// Parse tries to parse the given lines with its Atoms.
-// If several of its Atoms can parse a given line, the first one is chosen,
+// Parse tries to parse the given lines with its Rules.
+// If several of its Rules can parse a given line, the first one is chosen,
 // hence to correctly parse a document, it is primordial to pay attention to the
-// order of the Atoms.
-func (m Molecule) Parse(lines []string) (Particles, error) {
-	res := Particles{}
+// order of the Rules.
+func (m Rules) Parse(lines []string) (Elements, error) {
+	res := Elements{}
 	for len(lines) > 0 {
-		var emitted Particle
+		var emitted Element
 		var err error
-		for _, atom := range m {
-			lines, emitted, err = atom.Emit(lines)
+		for _, rule := range m {
+			lines, emitted, err = rule.Emit(lines)
 			if err != nil {
 				return nil, err
 			}
-			if !emitted.void() { // Managed to find an atom parsing the lines.
+			if !emitted.void() { // Managed to find an rule parsing the lines.
 				res = append(res, emitted)
 				break
 			}
@@ -267,8 +267,8 @@ func (m Molecule) Parse(lines []string) (Particles, error) {
 //////////////////////
 // i.e. functions returning a Taker.
 
-// GreedyTake builds a Taker function that will take all the consecutive
-// lines that satisfies its predicate.
+// GreedyTake builds a Taker function that will take all the consecutive lines
+// that satisfy its predicate.
 func GreedyTake(pred Pred[string]) Taker {
 	return func(lines []string) int {
 		for i, line := range lines {
@@ -327,38 +327,37 @@ func TrailingTake(maybe, otherwise Pred[string]) Taker {
 	}
 }
 
-////////////////////////////
-// Other atomic functions //
-////////////////////////////
-
+///////////////////////
+// Makers and bakers //
+///////////////////////
 // ReSectionMake generates a section Maker with a regexp that produces two groups:
 //  - The section specifier whose length is the level.
 //  - The section title.
 // The correctness of the regex is of course the responsibility of the caller.
 func ReSectionMake(r regex) Maker {
-	return func(lines []string) ParticleImpl {
+	return func(lines []string) ElementImpl {
 		groups := r.Groups(lines[0])
-		return SectionParticle{Level: len(groups[1]), Title: groups[2]}
+		return SectionElement{Level: len(groups[1]), Title: groups[2]}
 	}
 }
 
 // NoBk returns its raw argument.
 func NoBk(l string) string { return l }
 
-// ProseMk makes a ProseParticle.
-func ProseMk(ls []string) ParticleImpl { return ProseParticle{ls} }
+// ProseMk makes a ProseElement.
+func ProseMk(ls []string) ElementImpl { return ProseElement{ls} }
 
-// SpaceMk makes a SpaceParticle.
+// SpaceMk makes a SpaceElement.
 // It is the responsibility of the caller to ensure that its argument is indeed
 // whitespace.
-func SpaceMk(ls []string) ParticleImpl { return SpaceParticle{Raw: ls} }
+func SpaceMk(ls []string) ElementImpl { return SpaceElement{Raw: ls} }
 
 ////////////////////
-// Reusable atoms //
+// Reusable rules //
 ////////////////////
 
-// SpaceAtom takes lines composed exclusively of whitespace.
-var SpaceAtom = Atom{
+// SpaceRule parses lines composed exclusively of whitespace.
+var SpaceRule = Rule{
 	Take: GreedyTake(spaces.Intersects),
 	Bake: NoBk,
 	Make: SpaceMk,
@@ -368,20 +367,20 @@ var SpaceAtom = Atom{
 // Languages //
 ///////////////
 
-// Fuser represents a function able to fuse particles together to form a
+// Fuser represents a function able to fuse elements together to form a
 // document.
 // Fusing is therefore the dual of parsing.
-type Fuser func(Particles) ([]string, error)
+type Fuser func(Elements) ([]string, error)
 
 // Language represents a language, be it prose-based or code-based, and all that
 // is needed to manipulate it.
 type Language struct {
 	Identifiers []string
 	Extensions  []string
-	Parser      Molecule
+	Parser      Rules
 	Fuse        Fuser
 }
 
-func (l Language) Parse(lines []string) (Particles, error) {
+func (l Language) Parse(lines []string) (Elements, error) {
 	return l.Parser.Parse(lines)
 }
