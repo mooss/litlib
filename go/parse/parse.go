@@ -63,13 +63,18 @@ type Parameter struct {
 // is a simple and somewhat universal format.
 type Values []string
 
+// Empty returns true if there are no parameters.
+func (ps Parameters) Empty() bool {
+	return len(ps) == 0
+}
+
 // Has returns true if the given key is contained in the parameters.
 func (ps Parameters) Has(key string) bool {
 	return ps.Get(key) != nil
 }
 
-func (ps Parameters) Get(key string) *Values {
-	for _, p := range ps {
+func (ps *Parameters) Get(key string) *Values {
+	for _, p := range *ps {
 		if p.Key == key {
 			return &p.Values
 		}
@@ -89,13 +94,16 @@ func (ps *Parameters) Add(key string, values Values) {
 
 // FuseToNoweb fuses (aka serialises) parameters into noweb arguments.
 func (ps Parameters) FuseToNoweb() string {
-	return strings.Join(Map(func(p Parameter) string {
-		res := ":" + p.Key
-		if len(p.Values) > 0 {
-			res += " " + strings.Join(p.Values, " ")
+	acc := []string{}
+	for _, p := range ps {
+		if p.Key != "" {
+			acc = append(acc, ":"+p.Key)
 		}
-		return res
-	}, ps), " ")
+		if len(p.Values) > 0 {
+			acc = append(acc, p.Values...)
+		}
+	}
+	return strings.Join(acc, " ")
 }
 
 // RawElement is not a real element but simply a shortcut to define elements
@@ -140,14 +148,23 @@ func (c CodeElement) Repr() []string {
 	return *pslc("lang="+c.Lang, "Params="+c.Params.FuseToNoweb()).Add(c.Raw...)
 }
 
+type MetadataScope int
+
+const (
+	ScopeInvalid  MetadataScope = iota // Defined so that zero-constructed values are not accidentaly global.
+	ScopeDocument                      // Affects the whole document.
+	ScopeSubtree                       // Affects the current subtree (i.e. the section and its subsections).
+)
+
 // MetadataElement holds metadata about the document.
 type MetadataElement struct {
-	Name     string
-	RawValue string
+	Name  string
+	Data  Parameters
+	Scope MetadataScope
 }
 
 func (m MetadataElement) Repr() []string {
-	return slc(m.Name + "=" + m.RawValue)
+	return slc(m.Name + "=" + m.Data.FuseToNoweb())
 }
 
 // SectionElement represents a section marker, symbolising a new branch of the

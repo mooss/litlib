@@ -44,17 +44,27 @@ func (set str) First(s string) int {
 	return strings.IndexAny(s, string(set))
 }
 
-// Intersects returns true when all runes in s are also in set.
-func (set str) Intersects(s string) bool {
+// Skim returns the first index of s that is not in the set.
+// Returns -1 when the set intersects with s.
+func (set str) Skim(s string) int {
 	// There is probably some trick to make this faster.
-	for _, r := range s {
+	for i, r := range s {
+		found := true
 		for _, ref := range string(set) {
-			if ref != r {
-				return false
+			if ref == r {
+				found = false
 			}
 		}
+		if found {
+			return i
+		}
 	}
-	return true
+	return -1
+}
+
+// Intersects returns true when all runes in s are also in set.
+func (set str) Intersects(s string) bool {
+	return set.Skim(s) == -1
 }
 
 func (sep str) Join(s ...string) string {

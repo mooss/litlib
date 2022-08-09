@@ -16,6 +16,22 @@ var orgPropertyPfx = str("#+")
 var orgBeginPfx = str("#+begin_")
 var orgEndPfx = str("#+end_")
 
+////////////////
+// Primitives //
+////////////////
+
+// ParseOrgBeginSrc parses the language and noweb parameters of a `#+begin_src`
+// line.
+func ParseOrgBeginSrc(line string) (string, Parameters) {
+	line = orgBeginSrcPfx.StripLeftOf(line)
+	line = spaces.Trim(line)
+	pos := spaces.First(line)
+	if pos == -1 {
+		return line, Parameters{}
+	}
+	return line[:pos], ParseNowebArguments(line[pos:])
+}
+
 ////////////
 // Makers //
 ////////////
@@ -41,10 +57,14 @@ func OrgBlockMk(lines []string) ElementImpl {
 // OrgPropertyMk makes a metadata element from an Org property line.
 func OrgPropertyMk(lines []string) ElementImpl {
 	line := lines[0]
-	split := strings.SplitN(line, ":", 2)
-	res := MetadataElement{Name: spaces.Trim(split[0])}
+	split := strings.SplitN(line, " ", 2)
+	name := split[0]
+	if name[len(name)-1] == ':' {
+		name = name[:len(name)-1]
+	}
+	res := MetadataElement{Name: name, Scope: ScopeDocument}
 	if len(split) == 2 {
-		res.RawValue = spaces.TrimRight(split[1])
+		res.Data = ParseNowebArguments(split[1])
 	}
 	return res
 }
@@ -105,8 +125,8 @@ func OrgFuser(matter Elements) ([]string, error) {
 
 		case MetadataElement:
 			prop := "#+" + p.Name + ":"
-			if p.RawValue != "" {
-				prop += p.RawValue
+			if !p.Data.Empty() {
+				prop += " " + p.Data.FuseToNoweb()
 			}
 			res.Add(prop)
 
@@ -134,45 +154,4 @@ var OrgLang = Language{
 	Extensions:  []string{".org"},
 	Parser:      OrgRules,
 	Fuse:        OrgFuser,
-}
-
-///////////
-// Noweb //
-///////////
-
-// ParseNowebArguments parses noweb arguments into an argument map.
-// For example, ":exports none :include iostream vector :minipage" becomes:
-// map[string][]string {
-//     "exports": ["none"],
-//     "include": ["iostream", "vector"],
-//     "minipage": [],
-// }
-func ParseNowebArguments(args string) Parameters {
-	args = spaces.Trim(args)
-	defs := strings.Split(args, ":")
-
-	res := Parameters{}
-	if !strings.HasPrefix(args, ":") {
-		res.Add("", spaces.Fields(defs[0]))
-	}
-	defs = defs[1:]
-
-	for _, argspec := range defs {
-		fields := spaces.Fields(argspec)
-		res.Add(fields[0], fields[1:])
-	}
-
-	return res
-}
-
-// ParseOrgBeginSrc parses the language and noweb parameters of a `#+begin_src`
-// line.
-func ParseOrgBeginSrc(line string) (string, Parameters) {
-	line = orgBeginSrcPfx.StripLeftOf(line)
-	line = spaces.Trim(line)
-	pos := spaces.First(line)
-	if pos == -1 {
-		return line, Parameters{}
-	}
-	return line[:pos], ParseNowebArguments(line[pos:])
 }
