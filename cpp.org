@@ -2198,6 +2198,58 @@ struct identity {
 #+end_src
 
 
+** Filters
+
+Keep inside a container the values respecting a predicate, modifying the container in place.
+This implementation is quite naive and probably only works for vectors.
+
+#+name: keepin
+#+begin_src cpp
+template<class Callable, class Container>
+Container& keepin(Callable predicate, Container& sequence) {
+    auto from = sequence.begin();
+    auto to = from;
+    for(; from != sequence.end(); ++from) {
+        if(predicate(*from)) {
+            if(from != to) {
+                *to = *from;
+            }
+            ++to;
+        }
+    }
+    if(from != to) {
+        sequence.erase(to, sequence.end());
+    }
+    return sequence;
+}
+#+end_src
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb keepin <<vector print :cpp vector")>>
+
+int main() {
+    std::vector<int> lost{4, 8, 15, 16, 23, 42};
+    print{lost};
+    auto even = [](int el) { return el%2 == 0; };
+    auto evenlost = lost;
+    print{keepin(even, evenlost)};
+
+    auto oddlost = lost;
+    auto odd = [](int el) { return el%2 != 0; };
+    print{keepin(odd, oddlost)};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+[4, 8, 15, 16, 23, 42]
+[4, 8, 16, 42]
+[15, 23]
+#+end_src
+
+
+
 * Various utilities
 
 This section is dedicated to utilities without overarching themes.
