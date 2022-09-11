@@ -3211,6 +3211,37 @@ int main() {
 #+end_src
 
 
+** Error handling
+
+=panic= prints its arguments to stderr and exits.
+#+name: panic
+#+begin_src cpp
+namespace panic_impl {
+void printerrln(){}
+using namespace std;
+template<class Arg, class... Args>
+void printerrln(Arg&& head, Args&&... tail) {
+    cerr << forward<Arg>(head) << "\n";
+    printerrln(forward<Args>(tail)...);
+}
+}
+
+template<class... Args>
+void panic(Args&&... args) {
+    panic_impl::printerrln(std::forward<Args>(args)...);
+    exit(23);
+}
+#+end_src
+#+depends:panic :cpp iostream
+
+#+begin_src cpp :eval no-export :exports both :results silent
+<<include(":noweb panic")>>
+int main() {
+    panic("something", "terrible", "happened!");
+}
+#+end_src
+
+
 * Cool tricks (don't try this at home)
 
 This section is dedicated to weird C++ voltige.
