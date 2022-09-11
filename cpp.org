@@ -3203,42 +3203,59 @@ title: LitLib C++
 
 *** Split
 
-This function splits a =std::string_view=.
+This function splits a =std::string_view=, using a function able to find the next delimiter.
+This approach should allow to specify a lot of useful splitting behaviors.
 
-#+name: split<string_view>
-#+begin_src cpp
-std::vector<std::string_view> split(const std::string_view source, const std::string_view delim) {
+#+begin_src cpp :noweb-ref split<sv>
+template<class Finder>
+requires std::same_as<sub, decltype(std::declval<Finder>()(std::declval<std::string_view>()))>
+std::vector<std::string_view> split(std::string_view source, Finder finder) {
     std::vector<std::string_view> res;
-    std::size_t pos = 0;
-    do {
-        auto next = source.find(delim, pos);
-        if(next == source.npos) {
-            res.push_back(source.substr(pos, source.size() - pos));
+    while(true) {
+        sub delim = finder(source);
+        if(delim.pos == sub::npos) { // Nothing found.
+            res.push_back(source);
             break;
         }
-        res.push_back(source.substr(pos, next - pos));
-        pos = next + delim.size();
-    } while(pos < source.size());
-    if(source.ends_with(delim)) { // I'm not that convinced by this move.
-        res.push_back("");
+        res.push_back(source.substr(0, delim.pos));
+        source = source.substr(delim.pos + delim.len);
+        if(source.size() == 0) { // Source ends with a delimiter.
+            res.push_back(source);
+            break;
+        }
     }
     return res;
 }
 #+end_src
-#+depends:split<string_view> :cpp string_view vector
+#+depends:split<sv> :noweb sub :cpp string_view vector concepts
+
+This split on the given delimiter and is a good example on how to use the functional =split= function:
+#+begin_src cpp :noweb-ref split<sv>
+std::vector<std::string_view> split(const std::string_view source, const std::string_view delim) {
+    return split(source, [delim](const std::string_view _source){
+        auto pos = _source.find(delim);
+        if(pos == _source.npos) {
+            return sub{};
+        }
+        return sub{.pos=pos, .len=delim.size()};
+    });
+}
+#+end_src
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb <<vector print split<string_view>")>>
+<<include(":noweb <<vector print split<sv>")>>
 
 int main() {
     print{split(" -> 4 -> 8 -> 15 -> 16 -> 23 -> 42 -> ", " -> ")};
+    print{split("4 -> 8 -> 15 -> 16 -> 23 -> 42", " -> ")};
 }
 #+end_src
 
 #+RESULTS:
 #+begin_src text :minipage
 [, 4, 8, 15, 16, 23, 42, ]
+[4, 8, 15, 16, 23, 42]
 #+end_src
 
 
