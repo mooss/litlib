@@ -3116,6 +3116,49 @@ title: LitLib C++
 #+end_src
 
 
+** Strings
+
+*** Split
+
+This function splits a =std::string_view=.
+
+#+name: split<string_view>
+#+begin_src cpp
+std::vector<std::string_view> split(const std::string_view source, const std::string_view delim) {
+    std::vector<std::string_view> res;
+    std::size_t pos = 0;
+    do {
+        auto next = source.find(delim, pos);
+        if(next == source.npos) {
+            res.push_back(source.substr(pos, source.size() - pos));
+            break;
+        }
+        res.push_back(source.substr(pos, next - pos));
+        pos = next + delim.size();
+    } while(pos < source.size());
+    if(source.ends_with(delim)) { // I'm not that convinced by this move.
+        res.push_back("");
+    }
+    return res;
+}
+#+end_src
+#+depends:split<string_view> :cpp string_view vector
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb <<vector print split<string_view>")>>
+
+int main() {
+    print{split(" -> 4 -> 8 -> 15 -> 16 -> 23 -> 42 -> ", " -> ")};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+[, 4, 8, 15, 16, 23, 42, ]
+#+end_src
+
+
 * Cool tricks (don't try this at home)
 
 This section is dedicated to weird C++ voltige.
