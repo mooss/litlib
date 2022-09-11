@@ -3082,6 +3082,40 @@ ScaleType& transform_scaled_interpolation(
 #+depends:transform_scaled_interpolation :noweb scale_converter
 
 
+** Files
+
+=slurp= reads a file into a =std::string=:
+#+name: slurp
+#+begin_src cpp
+std::string slurp(const char* filename) {
+    std::FILE* file = fopen(filename, "r");
+    std::fseek(file, 0, SEEK_END);
+    size_t size = std::ftell(file);
+    std::string res(size, '\0');
+    std::rewind(file);
+    std::fread(res.data(), sizeof(char), size, file);
+    std::fclose(file);
+    return res;
+}
+#+end_src
+#+depends:slurp :cpp cstdio string
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print slurp")>>
+
+int main() {
+    auto cpp_org = slurp("cpp.org");
+    print(cpp_org.substr(2, 17));
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+title: LitLib C++
+#+end_src
+
+
 * Cool tricks (don't try this at home)
 
 This section is dedicated to weird C++ voltige.
