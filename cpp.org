@@ -3261,6 +3261,8 @@ int main() {
 
 ** Error handling
 
+*** Panic function
+
 =panic= prints its arguments to stderr and exits.
 #+name: panic
 #+begin_src cpp
@@ -3288,6 +3290,91 @@ int main() {
     panic("something", "terrible", "happened!");
 }
 #+end_src
+
+*** Error type
+
+Maybe can contain a value or an error.
+#+name: maybe
+#+begin_src cpp
+struct sterr {
+    std::string msg;
+};
+
+template<class Value>
+struct maybe {
+    std::variant<Value, sterr> var;
+    maybe(Value val): var(val) {}
+    maybe(sterr val): var(val) {}
+    explicit operator bool() const { return std::holds_alternative<Value>(var); }
+
+    void assert() {
+        if(!*this) {
+            panic(
+                std::get<sterr>(var).msg,
+                "Hint: check if a maybe contains an sterr with the boolean conversion operator."
+            );
+        }
+    }
+
+    Value& operator*() {
+        assert();
+        return std::get<Value>(var);
+    }
+
+    Value const& operator*() const {
+        assert();
+        return std::get<Value>(var);
+    }
+
+    std::string_view err() const {
+        if(*this) {
+            return std::string_view();
+        }
+        return std::get<sterr>(var).msg;
+    }
+};
+#+end_src
+#+depends:maybe :noweb panic :cpp variant string string_view
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print maybe print_size")>>
+
+maybe<int> even(int i) {
+    if(i%2 == 0) {
+        return i;
+    }
+    return sterr{"expected an even number"};
+}
+
+int main() {
+    print{*even(16)};
+
+    // print{*even(23)};
+    // Exits and prints to stderr:
+    // expected an even number
+    // Hint: check if a maybe contains an error with the boolean conversion operator.
+
+    auto fifteen = even(15);
+    if(fifteen) {
+        print{*fifteen};
+    } else {
+        print{fifteen.err()};
+    }
+
+    print_size<maybe<int>>();
+    print_size<std::string>();
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+16
+expected an even number
+maybe<int> -> 40 bytes (320 bits)
+std::__cxx11::basic_string<char> -> 32 bytes (256 bits)
+#+end_src
+
 
 
 * Cool tricks (don't try this at home)
