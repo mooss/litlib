@@ -2062,11 +2062,11 @@ struct hash<std::pair<First, Second>> {
 #+depends:hash/pair :noweb hash_combine :cpp utility
 
 
-** Coordinates
+** Positions
+
+*** 2d coordinates
 
 The coordinates presented here are more types that proper data structures.
-
-*** 2d
 
 #+name: xy_coords
 #+begin_src cpp
@@ -2076,6 +2076,37 @@ struct xy_coords {
     bool operator==(const xy_coords&) const=default;
 };
 #+end_src
+
+*** Within a sequence
+
+=sub= represents a subsequence within a sequence, as a position an a length.
+The constant =npos= is an invalid position, and since it is the default value, the default =sub= object can be used to convey a failure.
+
+#+name: sub
+#+begin_src cpp
+struct sub {
+    static constexpr std::size_t npos = 18446744073709551615UL; // Not ideal.
+    std::size_t pos = npos;
+    std::size_t len = 0;
+};
+#+end_src
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print sub")>>
+
+int main() {
+    print{sub::npos};
+    print{sub::npos+1};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+18446744073709551615
+0
+#+end_src
+
 
 
 * Functional programming
