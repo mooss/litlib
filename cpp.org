@@ -2229,6 +2229,18 @@ struct identity {
 #+end_src
 
 
+** Iteration
+
+*** =foreach=
+
+#+name: foreach
+#+begin_src cpp
+void foreach(auto fun, const auto& range) {
+    for(auto el: range) fun(el);
+}
+#+end_src
+
+
 ** Filters
 
 Keep inside a container the values respecting a predicate, modifying the container in place.
