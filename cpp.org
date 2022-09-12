@@ -3270,20 +3270,17 @@ namespace panic_impl {
 void printerrln(){}
 using namespace std;
 
-template<class Arg>
-void printerrln_one(const Arg& head) {
+void printerrln_one(const auto& head) {
     cerr << head << "\n";
 }
 
-template<class Arg, class... Args>
-void printerrln(const Arg& head, const Args&... tail) {
+void printerrln(const auto& head, const auto&... tail) {
     printerrln_one(head);
     printerrln(tail...);
 }
 } // namespace panic_impl
 
-template<class... Args>
-void panic(const Args&... args) {
+void panic(const auto&... args) {
     panic_impl::printerrln(args...);
     exit(23);
 }
