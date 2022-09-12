@@ -3279,30 +3279,40 @@ int main() {
 #+name: panic
 #+begin_src cpp
 namespace panic_impl {
-void printerrln(){}
 using namespace std;
+// Cannot make the container one with a function, but it works perfectly with a lambda.
+auto one_ = [](const auto& el) {
+    cerr << el << "\n";
+};
 
-void printerrln_one(const auto& head) {
-    cerr << head << "\n";
+void one(const auto& el) { one_(el); }
+
+// Vulgar attempt to identify a container.
+template<class T>
+requires std::same_as<decltype(std::declval<T>().cbegin()), typename T::const_iterator>
+void one(const T& container) {
+    foreach(one_, container);
 }
 
-void printerrln(const auto& head, const auto&... tail) {
-    printerrln_one(head);
-    printerrln(tail...);
+void all(){}
+void all(const auto& head, const auto&... tail) {
+    one(head);
+    all(tail...);
 }
 } // namespace panic_impl
 
 void panic(const auto&... args) {
-    panic_impl::printerrln(args...);
+    panic_impl::all(args...);
     exit(23);
 }
 #+end_src
-#+depends:panic :cpp iostream
+#+depends:panic :noweb foreach :cpp iostream
 
 #+begin_src cpp :eval no-export :exports both :results silent
-<<include(":noweb panic")>>
+<<include(":noweb panic foreach :cpp vector")>>
 int main() {
-    panic("something", "terrible", "happened!");
+    std::vector<std::string> lost{"4", "8", "15", "16"};
+    panic("something", "terrible", "happened!", lost);
 }
 #+end_src
 
