@@ -3355,6 +3355,9 @@ class maybe {
     }
 
   public:
+    using value_type = Value;
+    using error_type = Error;
+
     template<class V>
     maybe(V&& val): var(std::forward<V>(val)) {}
     explicit operator bool() const { return std::holds_alternative<Value>(var); }
@@ -3500,7 +3503,8 @@ There are lots of way to improve it, starting with moving values out of =maybe_r
 #+begin_src cpp
 template<class C>
 auto maperr(auto fun, const C& container) {
-    using vec = std::vector<typename C::value_type>;
+    using T = decltype(fun(std::declval<typename C::value_type>()))::value_type;
+    using vec = std::vector<T>;
     vec success;
     success.reserve(container.size());
     for(auto& el: container) {
@@ -3517,17 +3521,20 @@ auto maperr(auto fun, const C& container) {
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb <<vector maybe-functions maperr")>>
+<<include(":noweb <<vector maybe-functions maperr print_size")>>
 
 int main() {
     // TODO find how to implicitly "cast" initialiser lists to vectors in maperr.
-    print_maybe(maperr(even, std::vector<int>{4, 8, 15, 16, 23, 42}));
+    auto res = maperr(even, std::vector<int>{4, 8, 15, 16, 23, 42});
+    print_size<decltype(res)>();
+    print_maybe(res);
     print_maybe(maperr(even, std::vector<int>{4, 8, 16, 42, 108}));
 }
 #+end_src
 
 #+RESULTS:
 #+begin_src text :minipage
+maybe<std::vector<int>, sterr> -> 40 bytes (320 bits)
 expected an even number
 [4, 8, 16, 42, 108]
 #+end_src
