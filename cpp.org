@@ -3329,7 +3329,7 @@ template<class Value, class Error=sterr>
 class maybe {
   private:
     std::variant<Value, Error> var;
-    void private_assert() {
+    void private_assert() const {
         if(!*this) panic(
             std::get<Error>(var).msg,
             "Hint: check if a maybe contains an error with the boolean conversion operator."
@@ -3366,7 +3366,7 @@ class maybe {
         return error->msg;
     }
 
-    void assert() {
+    void assert() const {
         if(!*this) panic(std::get<Error>(var).msg);
     }
 };
