@@ -3328,8 +3328,8 @@ struct sterr {
 template<class Value, class Error=sterr>
 struct maybe {
     std::variant<Value, Error> var;
-    maybe(Value val): var(val) {}
-    maybe(Error&& val): var(std::move(val)) {}
+    template<class V>
+    maybe(V&& val): var(std::forward<V>(val)) {}
     explicit operator bool() const { return std::holds_alternative<Value>(var); }
 
     void assert() {
