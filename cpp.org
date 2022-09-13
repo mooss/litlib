@@ -3357,6 +3357,14 @@ struct maybe {
         }
         return &std::get<Error>(var);
     }
+
+    const auto& msg() const {
+        auto error = err();
+        if(error == nullptr) {
+            panic("Tried to access a non-existing error message.");
+        }
+        return error->msg;
+    }
 };
 #+end_src
 #+depends:maybe :noweb panic :cpp variant string
@@ -3384,7 +3392,7 @@ int main() {
     if(fifteen) {
         print{*fifteen};
     } else {
-        print{fifteen.err()->msg};
+        print{fifteen.msg()};
     }
 
     print_size<maybe<int>>();
