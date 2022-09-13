@@ -3408,6 +3408,69 @@ maybe<int> -> 40 bytes (320 bits)
 std::__cxx11::basic_string<char> -> 32 bytes (256 bits)
 #+end_src
 
+*** =vecmaybe=
+
+=vecmaybe= can be used to represent multiple errors.
+
+#+name: vecmaybe
+#+begin_src cpp
+struct vecerr {
+    std::vector<std::string> msg;
+    explicit operator bool() const { return !msg.empty(); } // Makes it easy to test if errors are stored.
+    void append(const auto& el) { msg.push_back(el.msg()); } // Append errors from maybe<T, sterr>.
+};
+
+template<class T>
+using vecmaybe = maybe<T, vecerr>;
+#+end_src
+#+depends:vecmaybe :noweb maybe :cpp vector string
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb <<vector print vecmaybe")>>
+
+maybe<int> even(int i) {
+    if(i%2 == 0) {
+        return i;
+    }
+    return sterr{"expected an even number"};
+}
+
+vecmaybe<std::vector<int>> veceven(const std::vector<int>& vec) {
+    vecerr error;
+    std::vector<int> success;
+    for(auto el: vec) {
+        auto maybe_even = even(el);
+        if(maybe_even) {
+            if(!error) success.push_back(*maybe_even);
+        } else {
+            error.append(maybe_even);
+        }
+    }
+    if(error) return error;
+    return success;
+}
+
+void print_veceven(const std::vector<int>& vec) {
+    auto res = veceven(vec);
+    if(res) {
+        print{*res};
+    } else {
+        print{res.msg()};
+    }
+}
+
+int main() {
+    print_veceven({4, 8, 15, 16, 23, 42});
+    print_veceven({4, 8, 16, 42, 108});
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+[expected an even number, expected an even number]
+[4, 8, 16, 42, 108]
+#+end_src
 
 
 * Cool tricks (don't try this at home)
