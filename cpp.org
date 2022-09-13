@@ -3316,7 +3316,7 @@ int main() {
 }
 #+end_src
 
-*** Error type
+*** =maybe=
 
 Maybe can contain a value or an error.
 #+name: maybe
@@ -3325,18 +3325,18 @@ struct sterr {
     std::string msg;
 };
 
-template<class Value>
+template<class Value, class Error=sterr>
 struct maybe {
-    std::variant<Value, sterr> var;
+    std::variant<Value, Error> var;
     maybe(Value val): var(val) {}
-    maybe(sterr val): var(val) {}
+    maybe(Error&& val): var(std::move(val)) {}
     explicit operator bool() const { return std::holds_alternative<Value>(var); }
 
     void assert() {
         if(!*this) {
             panic(
-                std::get<sterr>(var).msg,
-                "Hint: check if a maybe contains an sterr with the boolean conversion operator."
+                std::get<Error>(var).msg,
+                "Hint: check if a maybe contains an error with the boolean conversion operator."
             );
         }
     }
@@ -3346,20 +3346,20 @@ struct maybe {
         return std::get<Value>(var);
     }
 
-    Value const& operator*() const {
+    const Value& operator*() const {
         assert();
         return std::get<Value>(var);
     }
 
-    std::string_view err() const {
+    const Error* err() const {
         if(*this) {
-            return std::string_view();
+            return nullptr;
         }
-        return std::get<sterr>(var).msg;
+        return &std::get<Error>(var);
     }
 };
 #+end_src
-#+depends:maybe :noweb panic :cpp variant string string_view
+#+depends:maybe :noweb panic :cpp variant string
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
@@ -3384,7 +3384,7 @@ int main() {
     if(fifteen) {
         print{*fifteen};
     } else {
-        print{fifteen.err()};
+        print{fifteen.err()->msg};
     }
 
     print_size<maybe<int>>();
