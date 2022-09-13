@@ -3276,47 +3276,63 @@ int main() {
 *** Panic function
 
 =panic= prints its arguments to stderr and exits.
+#+name: panic_impl
+#+begin_src cpp
+namespace panic_impl {
+// This lambda can also be used in extensions, like panic/vector.
+auto one_ = [](const auto& el) {
+    std::cerr << el << "\n";
+};
+void one(const auto& el) { one_(el); }
+} // namespace panic_impl
+#+end_src
+#+depends:panic_impl :noweb foreach :cpp iostream
 #+name: panic
 #+begin_src cpp
 namespace panic_impl {
-using namespace std;
-// Cannot make the container one with a function, but it works perfectly with a lambda.
-auto one_ = [](const auto& el) {
-    cerr << el << "\n";
-};
-
-void one(const auto& el) { one_(el); }
-
-// Vulgar attempt to identify a container.
-template<class T>
-requires requires(T t) {
-    { t.cbegin() } -> std::same_as<typename T::const_iterator>;
-}
-void one(const T& container) {
-    foreach(one_, container);
-}
-
 void all(){}
 void all(const auto& head, const auto&... tail) {
     one(head);
     all(tail...);
 }
-} // namespace panic_impl
+}
 
 void panic(const auto&... args) {
     panic_impl::all(args...);
     exit(23);
 }
 #+end_src
-#+depends:panic :noweb foreach :cpp iostream
+#+depends:panic :noweb panic_impl
+
+Usage:
+#+begin_src cpp :eval no-export :exports both :results silent
+<<include(":noweb panic :cpp vector")>>
+int main() {
+    panic("something", "terrible", "happened!");
+}
+#+end_src
+
+Extension for vectors:
+#+name: panic_impl/vector
+#+begin_src cpp
+namespace panic_impl {
+template<class T, class Allocator>
+void one(const std::vector<T, Allocator>& container) {
+    foreach(one_, container);
+}
+} // namespace panic_impl
+#+end_src
+#+depends:panic_impl/vector :noweb panic_impl foreach :cpp vector
+#+depends:panic/vector :noweb panic_impl/vector panic
 
 #+begin_src cpp :eval no-export :exports both :results silent
-<<include(":noweb panic foreach :cpp vector")>>
+<<include(":noweb panic/vector foreach :cpp vector")>>
 int main() {
     std::vector<std::string> lost{"4", "8", "15", "16"};
     panic("something", "terrible", "happened!", lost);
 }
 #+end_src
+
 
 *** =maybe=
 
@@ -3442,7 +3458,7 @@ struct vecerr {
 template<class T>
 using vecmaybe = maybe<T, vecerr>;
 #+end_src
-#+depends:vecmaybe :noweb maybe :cpp vector string
+#+depends:vecmaybe :noweb panic/vector maybe :cpp vector string
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
