@@ -3533,6 +3533,36 @@ expected an even number
 #+end_src
 
 
+*** =mapassert=
+
+A simple wrapper around =maperr= that triggers a panic via =maybe='s =assert= should an error be encountered.
+
+#+name: mapassert
+#+begin_src cpp
+auto mapassert(auto fun, const auto& container) {
+    auto res = maperr(fun, container);
+    res.assert();
+    return *res; // TODO: move into local and return for RVO ?
+}
+#+end_src
+#+depends:mapassert :noweb maperr
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb <<vector maybe-functions mapassert print_size")>>
+
+int main() {
+    // Panics with a single message (expected an even number):
+    // print{mapassert(even, std::vector<int>{4, 8, 15, 16, 23, 42})};
+    print{mapassert(even, std::vector<int>{4, 8, 16, 42, 108})};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+[4, 8, 16, 42, 108]
+#+end_src
+
 
 * Cool tricks (don't try this at home)
 
