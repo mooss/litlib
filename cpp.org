@@ -3289,7 +3289,9 @@ void one(const auto& el) { one_(el); }
 
 // Vulgar attempt to identify a container.
 template<class T>
-requires std::same_as<decltype(std::declval<T>().cbegin()), typename T::const_iterator>
+requires requires(T t) {
+    { t.cbegin() } -> std::same_as<typename T::const_iterator>;
+}
 void one(const T& container) {
     foreach(one_, container);
 }
