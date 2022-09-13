@@ -3326,28 +3326,28 @@ struct sterr {
 };
 
 template<class Value, class Error=sterr>
-struct maybe {
+class maybe {
+  private:
     std::variant<Value, Error> var;
+    void private_assert() {
+        if(!*this) panic(
+            std::get<Error>(var).msg,
+            "Hint: check if a maybe contains an error with the boolean conversion operator."
+        );
+    }
+
+  public:
     template<class V>
     maybe(V&& val): var(std::forward<V>(val)) {}
     explicit operator bool() const { return std::holds_alternative<Value>(var); }
 
-    void assert() {
-        if(!*this) {
-            panic(
-                std::get<Error>(var).msg,
-                "Hint: check if a maybe contains an error with the boolean conversion operator."
-            );
-        }
-    }
-
     Value& operator*() {
-        assert();
+        private_assert();
         return std::get<Value>(var);
     }
 
     const Value& operator*() const {
-        assert();
+        private_assert();
         return std::get<Value>(var);
     }
 
@@ -3364,6 +3364,10 @@ struct maybe {
             panic("Tried to access a non-existing error message.");
         }
         return error->msg;
+    }
+
+    void assert() {
+        if(!*this) panic(std::get<Error>(var).msg);
     }
 };
 #+end_src
