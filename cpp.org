@@ -3373,16 +3373,29 @@ class maybe {
 #+end_src
 #+depends:maybe :noweb panic :cpp variant string
 
-Usage:
-#+begin_src cpp :eval no-export :exports both
-<<include(":noweb print maybe print_size")>>
-
+Some utilities that will be used at various points to illustrate =maybe= and its derivatives:
+#+name: maybe-functions
+#+begin_src cpp
 maybe<int> even(int i) {
     if(i%2 == 0) {
         return i;
     }
     return sterr{"expected an even number"};
 }
+
+void print_maybe(const auto& arg) {
+    if(arg) {
+        print{*arg};
+    } else {
+        print{arg.msg()};
+    }
+}
+#+end_src
+#+depends:maybe-functions :noweb print maybe
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb maybe-functions print_size")>>
 
 int main() {
     print{*even(16)};
@@ -3431,14 +3444,7 @@ using vecmaybe = maybe<T, vecerr>;
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb <<vector print vecmaybe")>>
-
-maybe<int> even(int i) {
-    if(i%2 == 0) {
-        return i;
-    }
-    return sterr{"expected an even number"};
-}
+<<include(":noweb <<vector maybe-functions vecmaybe")>>
 
 vecmaybe<std::vector<int>> veceven(const std::vector<int>& vec) {
     vecerr error;
@@ -3455,18 +3461,9 @@ vecmaybe<std::vector<int>> veceven(const std::vector<int>& vec) {
     return success;
 }
 
-void print_veceven(const std::vector<int>& vec) {
-    auto res = veceven(vec);
-    if(res) {
-        print{*res};
-    } else {
-        print{res.msg()};
-    }
-}
-
 int main() {
-    print_veceven({4, 8, 15, 16, 23, 42});
-    print_veceven({4, 8, 16, 42, 108});
+    print_maybe(veceven({4, 8, 15, 16, 23, 42}));
+    print_maybe(veceven({4, 8, 16, 42, 108}));
 }
 #+end_src
 
@@ -3502,27 +3499,12 @@ auto maperr(auto fun, const C& container) {
 
 Usage:
 #+begin_src cpp :eval no-export :exports both
-<<include(":noweb <<vector print maperr maybe")>>
-
-maybe<int> even(int i) {
-    if(i%2 == 0) {
-        return i;
-    }
-    return sterr{"expected an even number"};
-}
-
-void printmap(const std::vector<int>& range) {
-    auto res = maperr(even, range);
-    if(res) {
-        print{*res};
-    } else {
-        print{res.msg()};
-    }
-}
+<<include(":noweb <<vector maybe-functions maperr")>>
 
 int main() {
-    printmap({4, 8, 15, 16, 23, 42});
-    printmap({4, 8, 16, 42, 108});
+    // TODO find how to implicitly "cast" initialiser lists to vectors in maperr.
+    print_maybe(maperr(even, std::vector<int>{4, 8, 15, 16, 23, 42}));
+    print_maybe(maperr(even, std::vector<int>{4, 8, 16, 42, 108}));
 }
 #+end_src
 
