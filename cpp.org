@@ -3596,6 +3596,55 @@ int main() {
 [, 4, 8, 15, 16, 23, 42, ]
 #+end_src
 
+*** Conversions
+
+The conversions functions defined in this section are an attempt to bypass the limitation of the =ato*= function (their usage of 0 to signify an error), without using function that throw exceptions.
+
+A problem that still needs to be solved is the fact that a =std::string_view= can hold non null-terminated data, and the =ato*= functions cannot handle that.
+Another problem is that there is no way to know where the number parsing stopped.
+
+#+name: to-numbers
+#+begin_src cpp
+maybe<float> to_float(const std::string_view str) {
+    double res = std::atof(str.data()); // The fact that str might not be null-terminated is problematic.
+    if(res == 0 && str != "0" && str != "0.0" && str != ".0") {
+        return sterr{"failed to parse value as float"};
+    }
+    return float(res);
+}
+
+maybe<unsigned int> to_uint(const std::string_view str) {
+    long res = std::atol(str.data());
+    if(res < 0) {
+        return sterr{"expected an unsigned int, got negative number"};
+    }
+    if(res == 0 && str != "0") {
+        return sterr{"failed to parse value as unsigned int"};
+    }
+    return (unsigned int) res;
+}
+#+end_src
+#+depends:to-numbers :noweb maybe :cpp string_view cstdlib
+
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb print to-numbers")>>
+
+int main() {
+    print{*to_uint("4")};
+    print{to_uint("-8").msg()};
+    print{*to_float("15b")}; // No way to know parsing happily stopped at b.
+    print{to_float("#16").msg()};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+4
+expected an unsigned int, got negative number
+15
+failed to parse value as float
+#+end_src
+
 
 * Cool tricks (don't try this at home)
 
