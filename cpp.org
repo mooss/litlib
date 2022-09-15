@@ -3347,7 +3347,7 @@ template<class Value, class Error=sterr>
 class maybe {
   private:
     std::variant<Value, Error> var;
-    void private_assert() const {
+    void private_nofail() const {
         if(!*this) panic(
             std::get<Error>(var).msg,
             "Hint: check if a maybe contains an error with the boolean conversion operator."
@@ -3363,12 +3363,12 @@ class maybe {
     explicit operator bool() const { return std::holds_alternative<Value>(var); }
 
     Value& operator*() {
-        private_assert();
+        private_nofail();
         return std::get<Value>(var);
     }
 
     const Value& operator*() const {
-        private_assert();
+        private_nofail();
         return std::get<Value>(var);
     }
 
@@ -3387,7 +3387,7 @@ class maybe {
         return error->msg;
     }
 
-    void assert() const {
+    void nofail() const {
         if(!*this) panic(std::get<Error>(var).msg);
     }
 };
@@ -3542,13 +3542,13 @@ expected an even number
 
 *** =mapassert=
 
-A simple wrapper around =maperr= that triggers a panic via =maybe='s =assert= should an error be encountered.
+A simple wrapper around =maperr= that triggers a panic via =maybe='s =nofail= should an error be encountered.
 
 #+name: mapassert
 #+begin_src cpp
 auto mapassert(auto fun, const auto& container) {
     auto res = maperr(fun, container);
-    res.assert();
+    res.nofail();
     return *res; // TODO: move into local and return for RVO ?
 }
 #+end_src
