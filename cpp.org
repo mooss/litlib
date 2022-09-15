@@ -3211,66 +3211,6 @@ title: LitLib C++
 #+end_src
 
 
-** Strings
-
-*** Split
-
-This function splits a =std::string_view=, using a function able to find the next delimiter.
-This approach should allow to specify a lot of useful splitting behaviors.
-
-#+begin_src cpp :noweb-ref split/sv
-template<class Finder>
-requires std::same_as<sub, decltype(std::declval<Finder>()(std::declval<std::string_view>()))>
-std::vector<std::string_view> split(std::string_view source, Finder finder) {
-    std::vector<std::string_view> res;
-    while(true) {
-        sub delim = finder(source);
-        if(delim.pos == sub::npos) { // Nothing found.
-            res.push_back(source);
-            break;
-        }
-        res.push_back(source.substr(0, delim.pos));
-        source = source.substr(delim.pos + delim.len);
-        if(source.size() == 0) { // Source ends with a delimiter.
-            res.push_back(source);
-            break;
-        }
-    }
-    return res;
-}
-#+end_src
-#+depends:split/sv :noweb sub :cpp string_view vector concepts
-
-This split on the given delimiter and is a good example on how to use the functional =split= function:
-#+begin_src cpp :noweb-ref split/sv
-std::vector<std::string_view> split(const std::string_view source, const std::string_view delim) {
-    return split(source, [delim](const std::string_view _source){
-        auto pos = _source.find(delim);
-        if(pos == _source.npos) {
-            return sub{};
-        }
-        return sub{.pos=pos, .len=delim.size()};
-    });
-}
-#+end_src
-
-Usage:
-#+begin_src cpp :eval no-export :exports both
-<<include(":noweb <<vector print split/sv")>>
-
-int main() {
-    print{split(" -> 4 -> 8 -> 15 -> 16 -> 23 -> 42 -> ", " -> ")};
-    print{split("4 -> 8 -> 15 -> 16 -> 23 -> 42", " -> ")};
-}
-#+end_src
-
-#+RESULTS:
-#+begin_src text :minipage
-[, 4, 8, 15, 16, 23, 42, ]
-[4, 8, 15, 16, 23, 42]
-#+end_src
-
-
 ** Error handling
 
 *** Panic function
@@ -3332,7 +3272,6 @@ int main() {
     panic("something", "terrible", "happened!", lost);
 }
 #+end_src
-
 
 *** =maybe=
 
@@ -3539,7 +3478,6 @@ expected an even number
 [4, 8, 16, 42, 108]
 #+end_src
 
-
 *** =mapassert=
 
 A simple wrapper around =maperr= that triggers a panic via =maybe='s =nofail= should an error be encountered.
@@ -3568,6 +3506,94 @@ int main() {
 #+RESULTS:
 #+begin_src text :minipage
 [4, 8, 16, 42, 108]
+#+end_src
+
+
+** String views
+
+*** Finders
+
+A finder is a function able to find a subsequence with a string view.
+Such subsequence will be called a match.
+
+The function below builds a finder returning a subsequence starting at the first character respecting =predicate=.
+This subsequence is extended to all following characters respecting =predicate=.
+#+name: greedy_finder
+#+begin_src cpp
+auto greedy_finder(auto predicate) {
+    return [=](const std::string_view s) {
+        for(std::size_t begin = 0; begin < s.size(); ++begin) {
+            if(predicate(s[begin])) {
+                auto end = begin;
+                while(++end < s.size() && predicate(s[end]));
+                return sub{.pos=begin, .len=end-begin};
+            }
+        }
+        return sub{};
+    };
+}
+#+end_src
+#+depends:greedy_finder :noweb sub :cpp string_view
+
+*** Split
+
+This function splits a =std::string_view=, using a finder able to find the next delimiter.
+This approach should allow to specify a lot of useful splitting behaviors.
+
+#+begin_src cpp :noweb-ref split/sv
+template<class Finder>
+requires std::same_as<sub, decltype(std::declval<Finder>()(std::declval<std::string_view>()))>
+std::vector<std::string_view> split(std::string_view source, Finder finder) {
+    std::vector<std::string_view> res;
+    while(true) {
+        sub delim = finder(source);
+        if(delim.pos == sub::npos) { // Nothing found.
+            res.push_back(source);
+            break;
+        }
+        res.push_back(source.substr(0, delim.pos));
+        source = source.substr(delim.pos + delim.len);
+        if(source.size() == 0) { // Source ends with a delimiter.
+            res.push_back(source);
+            break;
+        }
+    }
+    return res;
+}
+#+end_src
+#+depends:split/sv :noweb sub :cpp string_view vector concepts
+
+This split on the given delimiter and is a good example on how to use the functional =split= function:
+#+begin_src cpp :noweb-ref split/sv
+std::vector<std::string_view> split(const std::string_view source, const std::string_view delim) {
+    return split(source, [delim](const std::string_view _source){
+        auto pos = _source.find(delim);
+        if(pos == _source.npos) {
+            return sub{};
+        }
+        return sub{.pos=pos, .len=delim.size()};
+    });
+}
+#+end_src
+
+Usage:
+#+begin_src cpp :eval no-export :exports both
+<<include(":noweb <<vector print split/sv greedy_finder")>>
+
+bool is_slash(char c) { return c == '/'; }
+
+int main() {
+    print{split(" -> 4 -> 8 -> 15 -> 16 -> 23 -> 42 -> ", " -> ")};
+    print{split("4 -> 8 -> 15 -> 16 -> 23 -> 42", " -> ")};
+    print{split("//4/8/////15///16////////23/42/", greedy_finder(is_slash))};
+}
+#+end_src
+
+#+RESULTS:
+#+begin_src text :minipage
+[, 4, 8, 15, 16, 23, 42, ]
+[4, 8, 15, 16, 23, 42]
+[, 4, 8, 15, 16, 23, 42, ]
 #+end_src
 
 
