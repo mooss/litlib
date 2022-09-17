@@ -341,20 +341,18 @@ if($tangle) { # Only takes noweb dependencies into account.
         # Calling extract_dependencies like this, with only one code block name and no other arguments
         # extracts the dependencies of this code block in isolation.
         my ($dependencies, undef) = extract_dependencies([$name]);
-
         make_necessary_dir($destination);
+        my $shebang = $global_args{$dependencies->{noweb}[0]}{shebang}[0];
+
         open(my $dest_handle, '>:encoding(UTF-8)', $destination)
             or die "Failed to open `$1`.";
 
         select $dest_handle; # select STDOUT to restore STDOUT as the default output file.
-        my $shebang = $global_args{$dependencies->{noweb}[0]}{shebang}[0];
-        if(defined $shebang) {
-            say $shebang;
-        }
-        foreach(@{$dependencies->{noweb}}) {
-            print_codeblock_once($_, $already_printed);
-        }
+        if(defined $shebang) { say $shebang }
+        foreach (@{$dependencies->{cpp}}) { say "#include <$_>" }
+        foreach(@{$dependencies->{noweb}}) { print_codeblock_once($_, $already_printed) }
         close $dest_handle;
+
         if(defined $shebang) { chmod 0755, $destination }
         select STDOUT;
         say "Tangled $name to $destination.";
