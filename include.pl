@@ -356,6 +356,8 @@ if($tangle) { # Only takes noweb dependencies into account.
         }
         close $dest_handle;
         if(defined $shebang) { chmod 0755, $destination }
+        select STDOUT;
+        say "Tangled $name to $destination.";
     }
     exit; # Tangling is done at the exclusion of anything else.
 }
