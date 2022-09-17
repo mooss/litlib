@@ -347,10 +347,15 @@ if($tangle) { # Only takes noweb dependencies into account.
             or die "Failed to open `$1`.";
 
         select $dest_handle; # select STDOUT to restore STDOUT as the default output file.
+        my $shebang = $global_args{$dependencies->{noweb}[0]}{shebang}[0];
+        if(defined $shebang) {
+            say $shebang;
+        }
         foreach(@{$dependencies->{noweb}}) {
             print_codeblock_once($_, $already_printed);
         }
         close $dest_handle;
+        if(defined $shebang) { chmod 0755, $destination }
     }
     exit; # Tangling is done at the exclusion of anything else.
 }
