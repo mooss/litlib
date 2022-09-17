@@ -143,7 +143,7 @@ sub merge_into_left {
     }
 }
 
-my (@global_lines, %global_named_blocks, %global_dependencies, %reffed, %global_tangle);
+my (@global_lines, %global_named_blocks, %global_dependencies, %reffed, %global_tangle, %global_args);
 sub lines_and_blocks {
     foreach my $filename (split / /, $filenames) {
         open(my $file, '<', $filename)
@@ -169,13 +169,20 @@ sub lines_and_blocks {
         } elsif($line =~ /^\s*#\+begin_src [^:]+ (:.*)/) {
             $debug->("Code block start -> $line");
             my $args = extract_parameters($1);
-            my $name = $args->{'noweb-ref'}[0];
-            if(defined $name) {
-                push @{$global_named_blocks{$name}}, $num + 1;
+            my $ref = $args->{'noweb-ref'}[0];
+            if(defined $ref) {
+                push @{$global_named_blocks{$ref}}, $num + 1;
                 if(exists $named{$num}) {
-                    push @{$reffed{$name}}, $named{$num};
-                    # So this thing is both reffed and named ? I have no idea why.
+                    push @{$reffed{$ref}}, $named{$num};
+                    # This thing has both a `#+name:` on the previous line and a
+                    # :noweb-ref header argument, I think that should be
+                    # illegal.
+                    # TODO: make it illegal and test it on Yliss's planet
+                    # generation, once dynasty/lineage is working again.
                 }
+            }
+            if(exists $named{$num}) {
+                $global_args{$named{$num}} = $args;
             }
 
         } elsif($line =~ /^\s*#\+depends:([^\s]+)\s+(.*)/) {
