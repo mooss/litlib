@@ -37,6 +37,7 @@ if($ARGV[1] =~ /:exit-with-error/) {
 
 sub stop {
     my $msg = shift;
+    select STDOUT;
     say '#error "' . $msg . '"';
     exit($exit_code);
 }
